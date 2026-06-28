@@ -19,6 +19,7 @@ interface MultiSelectDropdownProps {
   options: string[];
   selectedValues: Set<string>;
   onToggle: (value: string, checked: boolean) => void;
+  pluralLabel?: string;
 }
 
 const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
@@ -26,6 +27,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   options,
   selectedValues,
   onToggle,
+  pluralLabel,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -41,8 +43,8 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, []);
 
   const triggerLabel = selectedValues.size === 0
-    ? `All ${label}s`
-    : `${selectedValues.size} ${label}${selectedValues.size > 1 ? 's' : ''}`;
+    ? `All ${pluralLabel || label + 's'}`
+    : `${selectedValues.size} Selected`;
 
   return (
     <div className="multi-select-container" ref={dropdownRef}>
@@ -51,14 +53,17 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         className="multi-select-trigger" 
         onClick={() => setIsOpen(!isOpen)}
       >
-        {triggerLabel}
+        <span>{triggerLabel}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '8px', color: 'var(--color-muted)' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
       {isOpen && (
         <div className="multi-select-dropdown-list">
           {options.map((opt) => {
             const isChecked = selectedValues.has(opt);
             return (
-              <label key={opt} className="checkbox-label" style={{ padding: '0.3rem 0.5rem', whiteSpace: 'nowrap' }}>
+              <label key={opt} className="checkbox-label">
                 <input 
                   type="checkbox" 
                   checked={isChecked} 
@@ -173,15 +178,17 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
 
   return (
     <div className="controls-panel">
-      <div className="controls-row">
+      {/* Row 1: Search + Date selector + Auto refresh */}
+      <div className="controls-row-top">
         {/* Search Input */}
-        <div className="search-box">
-          <svg className="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="input-search-container">
+          <svg className="input-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input
             id="fuzzy-search-input"
+            className="input-text"
             type="text"
             placeholder="Search Name, Company, Partner, Country..."
             value={search}
@@ -189,10 +196,34 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
           />
         </div>
 
-        {/* Filters */}
-        <div className="filter-group" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Date Selector + Auto Refresh */}
+        <div className="controls-row-top-right">
+          <div className="date-selector-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: 'var(--color-muted)' }}>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Last 24 Hours</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '8px', color: 'var(--color-muted)' }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+
+          <div className="auto-refresh-indicator">
+            <span style={{ fontSize: '13px', color: 'var(--color-body)', fontWeight: 500 }}>Auto refresh</span>
+            <span className="refresh-dot"></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Filter Selects + Pause + Layout */}
+      <div className="controls-row-bottom">
+        <div className="controls-row-bottom-left">
           <MultiSelectDropdown
             label="Industry"
+            pluralLabel="Industrys"
             options={industries}
             selectedValues={industrySet}
             onToggle={handleToggleIndustry}
@@ -212,56 +243,64 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
             onToggle={handleToggleType}
           />
 
-          <select id="status-filter" value={status} onChange={handleStatusChange} style={{ minWidth: '130px' }}>
-            <option value="">All Statuses</option>
-            <option value="healthy">Healthy</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
-            <option value="Failed">Failed</option>
-          </select>
+          <div className="select-filter-container">
+            <select 
+              id="status-filter" 
+              className="select-filter" 
+              value={status} 
+              onChange={handleStatusChange}
+            >
+              <option value="">All Statuses</option>
+              <option value="healthy">Healthy</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
         </div>
 
-        {/* Pause/Play Stream Control */}
-        <div className="stream-controls">
+        <div className="controls-row-bottom-right">
+          {/* Pause Button */}
           <button
             id="stream-pause-play-btn"
-            className={`btn-pause-play ${isPaused ? 'paused' : 'running'}`}
+            className="btn btn-control-outline"
             onClick={handleTogglePause}
           >
             {isPaused ? (
               <>
-                <svg className="icon-play" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--color-success)' }}>
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                <span>Play {bufferCount > 0 && `(${bufferCount} buffered)`}</span>
+                <span>Play {bufferCount > 0 ? `(${bufferCount})` : ''}</span>
               </>
             ) : (
               <>
-                <svg className="icon-pause" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '2px' }}>
+                  <line x1="18" y1="4" x2="18" y2="20" />
+                  <line x1="6" y1="4" x2="6" y2="20" />
                 </svg>
                 <span>Pause</span>
               </>
             )}
           </button>
 
-          {/* Layout Persistence Configuration button */}
+          {/* Layout Button */}
           <div className="layout-config-container" ref={layoutDropdownRef}>
             <button
               id="layout-panel-toggle-btn"
-              className="btn-layout"
+              className="btn btn-control-outline"
               onClick={() => setShowLayoutMenu(!showLayoutMenu)}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="9" y1="3" x2="9" y2="21"></line>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="9" y1="9" x2="21" y2="9" />
               </svg>
               <span>Layout</span>
             </button>
 
             {showLayoutMenu && (
-              <div className="layout-menu dropdown-menu">
+              <div className="layout-menu">
                 <div className="layout-menu-section">
                   <span className="layout-menu-title">Panel Visibility</span>
                   <label className="checkbox-label">
@@ -297,7 +336,7 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
                     <span>Show Grid Window</span>
                   </label>
                 </div>
-                <div className="layout-menu-section" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div className="layout-menu-section" style={{ maxHeight: '180px', overflowY: 'auto' }}>
                   <span className="layout-menu-title">Visible Columns</span>
                   {columnsList.map((col) => (
                     <label key={col.id} className="checkbox-label">
