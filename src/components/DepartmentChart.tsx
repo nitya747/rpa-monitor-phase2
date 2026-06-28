@@ -96,7 +96,7 @@ export const DepartmentChart: React.FC = () => {
             borderColor: '#0D9488',
             borderWidth: 1,
             borderRadius: 4,
-            barThickness: 28,
+            barThickness: 20,
           }
         ]
       },
@@ -158,7 +158,7 @@ export const DepartmentChart: React.FC = () => {
             ticks: {
               color: labelColor,
               font: {
-                family: 'var(--font-mono)',
+                family: 'var(--font-primary)',
                 size: 11
               },
               callback: (val) => {
@@ -242,12 +242,12 @@ export const DepartmentChart: React.FC = () => {
       </div>
       
       {data.length === 0 ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240, color: 'var(--color-muted)', fontSize: '0.875rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: 'var(--color-muted)', fontSize: '0.875rem' }}>
           No data available
         </div>
       ) : (
         <>
-          <div className="chart-canvas-container" style={{ position: 'relative', height: '240px', width: '100%' }}>
+          <div className="chart-canvas-container" style={{ position: 'relative', height: '200px', width: '100%' }}>
             <canvas ref={canvasRef}></canvas>
           </div>
           <div className="chart-legend-row">

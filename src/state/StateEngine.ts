@@ -20,6 +20,7 @@ class RpaStateEngine {
 
   // Buffering / Pause-Play state
   private isPaused: boolean = false;
+  private isOverlayOpen: boolean = false;
   private bufferQueue: RpaRow[] = [];
 
   // Sort & Filter state
@@ -66,7 +67,7 @@ class RpaStateEngine {
 
   public subscribeStreamState(callback: StreamStateSubscriber): () => void {
     this.streamStateSubscribers.add(callback);
-    callback(this.isPaused, this.bufferQueue.length);
+    callback(this.isPaused, this.bufferQueue.length, this.isOverlayOpen);
     return () => {
       this.streamStateSubscribers.delete(callback);
     };
@@ -75,9 +76,10 @@ class RpaStateEngine {
   private notifyStreamState(): void {
     const isPaused = this.isPaused;
     const bufferCount = this.bufferQueue.length;
+    const isOverlayOpen = this.isOverlayOpen;
     this.streamStateSubscribers.forEach((sub) => {
       try {
-        sub(isPaused, bufferCount);
+        sub(isPaused, bufferCount, isOverlayOpen);
       } catch (e) {
         console.error('Error in stream state subscriber:', e);
       }
@@ -88,12 +90,23 @@ class RpaStateEngine {
   public setPaused(paused: boolean): void {
     if (this.isPaused === paused) return;
     this.isPaused = paused;
+    this.isOverlayOpen = paused; // auto-open overlay when pausing, auto-close when resuming
     this.notifyStreamState();
     if (!this.isPaused && this.bufferQueue.length > 0) {
       const pending = [...this.bufferQueue];
       this.bufferQueue = [];
       this.ingestBatch(pending);
     }
+  }
+
+  public setOverlayOpen(open: boolean): void {
+    if (this.isOverlayOpen === open) return;
+    this.isOverlayOpen = open;
+    this.notifyStreamState();
+  }
+
+  public getOverlayOpen(): boolean {
+    return this.isOverlayOpen;
   }
 
   public getPaused(): boolean {

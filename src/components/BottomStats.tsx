@@ -64,18 +64,16 @@ export const BottomStats: React.FC = () => {
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
           </div>
+          <span className="trend-badge-bottom">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+            9.4%
+          </span>
         </div>
         <div className="stat-card-right">
           <div className="stat-label">Executions Today</div>
-          <div className="stat-value-row">
-            <span className="stat-value">{executionsToday}M</span>
-            <span className="stat-trend trend-up">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              <span>9.4%</span>
-            </span>
-          </div>
+          <span className="stat-value">{executionsToday}M</span>
           <div className="stat-subtext">Total executions</div>
         </div>
       </div>
@@ -88,18 +86,16 @@ export const BottomStats: React.FC = () => {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
+          <span className="trend-badge-bottom">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+            1.2%
+          </span>
         </div>
         <div className="stat-card-right">
           <div className="stat-label">Success Rate</div>
-          <div className="stat-value-row">
-            <span className="stat-value">{successPercent.toFixed(2)}%</span>
-            <span className="stat-trend trend-up">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              <span>1.2%</span>
-            </span>
-          </div>
+          <span className="stat-value">{successPercent.toFixed(2)}%</span>
           <div className="stat-subtext">Successful executions</div>
         </div>
       </div>
@@ -113,18 +109,16 @@ export const BottomStats: React.FC = () => {
               <polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
+          <span className="trend-badge-bottom">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            6.8%
+          </span>
         </div>
         <div className="stat-card-right">
           <div className="stat-label">Avg. Execution Time</div>
-          <div className="stat-value-row">
-            <span className="stat-value">{avgTime} ms</span>
-            <span className="stat-trend trend-down">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-              <span>6.8%</span>
-            </span>
-          </div>
+          <span className="stat-value">{avgTime} ms</span>
           <div className="stat-subtext">Average time</div>
         </div>
       </div>
@@ -140,18 +134,16 @@ export const BottomStats: React.FC = () => {
               <line x1="6" y1="18" x2="6.01" y2="18" />
             </svg>
           </div>
+          <span className="trend-badge-bottom">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+            14.6%
+          </span>
         </div>
         <div className="stat-card-right">
           <div className="stat-label">Data Throughput</div>
-          <div className="stat-value-row">
-            <span className="stat-value">{dataThroughput} TB</span>
-            <span className="stat-trend trend-up">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-              <span>14.6%</span>
-            </span>
-          </div>
+          <span className="stat-value">{dataThroughput} TB</span>
           <div className="stat-subtext">Processed data</div>
         </div>
       </div>

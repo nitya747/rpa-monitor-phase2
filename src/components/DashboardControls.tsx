@@ -4,8 +4,6 @@ import { stateEngine } from '../state/StateEngine';
 interface DashboardControlsProps {
   showKPIs: boolean;
   onToggleKPIs: () => void;
-  showGrid: boolean;
-  onToggleGrid: () => void;
   showChart: boolean;
   onToggleChart: () => void;
   showToggles: boolean;
@@ -82,8 +80,6 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 export const DashboardControls: React.FC<DashboardControlsProps> = ({
   showKPIs,
   onToggleKPIs,
-  showGrid,
-  onToggleGrid,
   showChart,
   onToggleChart,
   showToggles,
@@ -94,6 +90,7 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   const [search, setSearch] = useState(stateEngine.getSearchQuery());
   const [isPaused, setIsPaused] = useState(stateEngine.getPaused());
   const [bufferCount, setBufferCount] = useState(stateEngine.getBufferCount());
+  const [isOverlayOpen, setIsOverlayOpen] = useState(stateEngine.getOverlayOpen());
   const [status, setStatus] = useState(stateEngine.getFilters().status);
   
   const [industrySet, setIndustrySet] = useState<Set<string>>(stateEngine.getFilters().industry);
@@ -104,9 +101,10 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = stateEngine.subscribeStreamState((paused, count) => {
+    const unsubscribe = stateEngine.subscribeStreamState((paused, count, overlayOpen) => {
       setIsPaused(paused);
       setBufferCount(count);
+      setIsOverlayOpen(overlayOpen);
     });
     return unsubscribe;
   }, []);
@@ -284,6 +282,22 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
             )}
           </button>
 
+          {isPaused && !isOverlayOpen && (
+            <button
+              id="stream-show-overlay-btn"
+              className="btn btn-control-outline"
+              onClick={() => stateEngine.setOverlayOpen(true)}
+              style={{ borderColor: 'var(--primary-500)', color: 'var(--primary-600)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '2px' }}>
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              <span>View Analytics</span>
+            </button>
+          )}
+
           {/* Layout Button */}
           <div className="layout-config-container" ref={layoutDropdownRef}>
             <button
@@ -326,14 +340,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
                       onChange={onToggleToggles}
                     />
                     <span>Show Infrastructure Toggles</span>
-                  </label>
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={showGrid}
-                      onChange={onToggleGrid}
-                    />
-                    <span>Show Grid Window</span>
                   </label>
                 </div>
                 <div className="layout-menu-section" style={{ maxHeight: '180px', overflowY: 'auto' }}>

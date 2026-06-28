@@ -31,4 +31,4 @@ export interface GlobalMetrics {
 
 export type SummarySubscriber = (metrics: GlobalMetrics) => void;
 export type GridSubscriber = () => void;
-export type StreamStateSubscriber = (isPaused: boolean, bufferCount: number) => void;
+export type StreamStateSubscriber = (isPaused: boolean, bufferCount: number, isOverlayOpen: boolean) => void;

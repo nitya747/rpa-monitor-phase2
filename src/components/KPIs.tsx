@@ -115,13 +115,13 @@ export const KPIs: React.FC<KPIsProps> = ({ onViewAllHealth }) => {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </div>
-            <span className="kpi-label" style={{ textTransform: 'none', fontWeight: 600, fontSize: '15px', color: 'var(--color-heading)' }}>System Health</span>
+            <span className="kpi-label" style={{ textTransform: 'none', fontWeight: 600, fontSize: '13.5px', color: 'var(--color-heading)' }}>System Health</span>
           </div>
           <button 
             type="button" 
             className="view-all-link" 
             onClick={onViewAllHealth}
-            style={{ background: 'none', border: 'none', color: 'var(--primary-600)', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: 'var(--primary-600)', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
           >
             View all
           </button>
@@ -136,9 +136,9 @@ export const KPIs: React.FC<KPIsProps> = ({ onViewAllHealth }) => {
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                 </svg>
               </div>
-              <span className="health-status-name">Healthy</span>
+              <span className="health-status-value">{metrics.statusCounts.healthy.toLocaleString()}</span>
             </div>
-            <span className="health-status-value">{metrics.statusCounts.healthy.toLocaleString()}</span>
+            <span className="health-status-name">Healthy</span>
           </div>
 
           {/* Warning Row */}
@@ -149,9 +149,9 @@ export const KPIs: React.FC<KPIsProps> = ({ onViewAllHealth }) => {
                   <path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z" />
                 </svg>
               </div>
-              <span className="health-status-name">Warning</span>
+              <span className="health-status-value">{metrics.statusCounts.warning.toLocaleString()}</span>
             </div>
-            <span className="health-status-value">{metrics.statusCounts.warning.toLocaleString()}</span>
+            <span className="health-status-name">Warning</span>
           </div>
 
           {/* Critical Row */}
@@ -162,9 +162,9 @@ export const KPIs: React.FC<KPIsProps> = ({ onViewAllHealth }) => {
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                 </svg>
               </div>
-              <span className="health-status-name">Critical</span>
+              <span className="health-status-value">{metrics.statusCounts.critical.toLocaleString()}</span>
             </div>
-            <span className="health-status-value">{metrics.statusCounts.critical.toLocaleString()}</span>
+            <span className="health-status-name">Critical</span>
           </div>
 
           {/* Failed Row */}
@@ -175,9 +175,9 @@ export const KPIs: React.FC<KPIsProps> = ({ onViewAllHealth }) => {
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </div>
-              <span className="health-status-name">Failed</span>
+              <span className="health-status-value">{metrics.statusCounts.Failed.toLocaleString()}</span>
             </div>
-            <span className="health-status-value">{metrics.statusCounts.Failed.toLocaleString()}</span>
+            <span className="health-status-name">Failed</span>
           </div>
         </div>
 

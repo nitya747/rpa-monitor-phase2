@@ -88,16 +88,6 @@ export const InfrastructureToggles: React.FC = () => {
           </label>
         </div>
       </div>
-      
-      <div className="toggles-card-footer">
-        <a href="#configurations" className="view-configs-link">
-          <span>View all configurations</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '6px' }}>
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </a>
-      </div>
     </div>
   );
 };

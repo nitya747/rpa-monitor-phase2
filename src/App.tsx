@@ -4,7 +4,6 @@ import { VirtualizedGrid } from './components/VirtualizedGrid';
 import { DashboardControls } from './components/DashboardControls';
 import { DepartmentChart } from './components/DepartmentChart';
 import { InfrastructureToggles } from './components/InfrastructureToggles';
-import { BottomStats } from './components/BottomStats';
 import { stateEngine } from './state/StateEngine';
 import { OverlayDashboard } from './components/OverlayDashboard';
 
@@ -22,7 +21,6 @@ const App: React.FC = () => {
   
   // Layout visibility states
   const [showKPIs, setShowKPIs] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
   const [showChart, setShowChart] = useState(true);
   const [showToggles, setShowToggles] = useState(true);
 
@@ -60,7 +58,6 @@ const App: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.showKPIs === 'boolean') setShowKPIs(parsed.showKPIs);
-        if (typeof parsed.showGrid === 'boolean') setShowGrid(parsed.showGrid);
         if (typeof parsed.showChart === 'boolean') setShowChart(parsed.showChart);
         if (typeof parsed.showToggles === 'boolean') setShowToggles(parsed.showToggles);
         
@@ -94,7 +91,6 @@ const App: React.FC = () => {
   // Save layout helper
   const saveLayout = (
     updatedKPIs: boolean,
-    updatedGrid: boolean,
     updatedChart: boolean,
     updatedToggles: boolean,
     updatedColumns: { [key: string]: boolean }
@@ -104,7 +100,6 @@ const App: React.FC = () => {
         'rpa_monitor_layout',
         JSON.stringify({ 
           showKPIs: updatedKPIs, 
-          showGrid: updatedGrid,
           showChart: updatedChart,
           showToggles: updatedToggles,
           visibleColumns: updatedColumns 
@@ -118,25 +113,19 @@ const App: React.FC = () => {
   const handleToggleKPIs = () => {
     const nextVal = !showKPIs;
     setShowKPIs(nextVal);
-    saveLayout(nextVal, showGrid, showChart, showToggles, visibleColumns);
-  };
-
-  const handleToggleGrid = () => {
-    const nextVal = !showGrid;
-    setShowGrid(nextVal);
-    saveLayout(showKPIs, nextVal, showChart, showToggles, visibleColumns);
+    saveLayout(nextVal, showChart, showToggles, visibleColumns);
   };
 
   const handleToggleChart = () => {
     const nextVal = !showChart;
     setShowChart(nextVal);
-    saveLayout(showKPIs, showGrid, nextVal, showToggles, visibleColumns);
+    saveLayout(showKPIs, nextVal, showToggles, visibleColumns);
   };
 
   const handleToggleToggles = () => {
     const nextVal = !showToggles;
     setShowToggles(nextVal);
-    saveLayout(showKPIs, showGrid, showChart, nextVal, visibleColumns);
+    saveLayout(showKPIs, showChart, nextVal, visibleColumns);
   };
 
   const handleToggleColumn = (colId: string) => {
@@ -145,7 +134,7 @@ const App: React.FC = () => {
       [colId]: !visibleColumns[colId],
     };
     setVisibleColumns(nextCols);
-    saveLayout(showKPIs, showGrid, showChart, showToggles, nextCols);
+    saveLayout(showKPIs, showChart, showToggles, nextCols);
   };
 
   useEffect(() => {
@@ -250,27 +239,24 @@ const App: React.FC = () => {
 
       {/* Main Panel Container */}
       <main className="main-container">
-        {/* Render Header with Search & Controls */}
-        <DashboardControls
-          showKPIs={showKPIs}
-          onToggleKPIs={handleToggleKPIs}
-          showGrid={showGrid}
-          onToggleGrid={handleToggleGrid}
-          showChart={showChart}
-          onToggleChart={handleToggleChart}
-          showToggles={showToggles}
-          onToggleToggles={handleToggleToggles}
-          visibleColumns={visibleColumns}
-          onToggleColumn={handleToggleColumn}
-        />
-
         {/* Content Viewport */}
         <div className="content-viewport">
+          {/* Render Header with Search & Controls */}
+          <DashboardControls
+            showKPIs={showKPIs}
+            onToggleKPIs={handleToggleKPIs}
+            showChart={showChart}
+            onToggleChart={handleToggleChart}
+            showToggles={showToggles}
+            onToggleToggles={handleToggleToggles}
+            visibleColumns={visibleColumns}
+            onToggleColumn={handleToggleColumn}
+          />
           {/* Active Navigation Selector Router */}
           {activeNav === 'overview' && (
             <>
               {/* Dynamic Telemetry Status Banner */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div>
                   <h2 className="dashboard-title">RPA Automation Telemetry</h2>
                   <p className="page-subtitle" style={{ fontSize: '13px', marginTop: '2px' }}>
@@ -306,9 +292,6 @@ const App: React.FC = () => {
                   )}
                 </div>
               )}
-
-              {/* 3. Bottom Row: Executions Today, Success Rate, Avg Execution Time, Data Throughput */}
-              {showGrid && <BottomStats />}
             </>
           )}
 

@@ -5,6 +5,7 @@ import Chart from 'chart.js/auto';
 
 export const OverlayDashboard: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [bufferCount, setBufferCount] = useState(0);
   const [showAnalytics, setShowAnalytics] = useState(false);
   
@@ -36,9 +37,10 @@ export const OverlayDashboard: React.FC = () => {
 
   // Subscribe to stream state (paused/play, buffer count)
   useEffect(() => {
-    const unsubscribe = stateEngine.subscribeStreamState((paused, count) => {
+    const unsubscribe = stateEngine.subscribeStreamState((paused, count, overlayOpen) => {
       setIsPaused(paused);
       setBufferCount(count);
+      setIsOverlayOpen(overlayOpen);
     });
     return unsubscribe;
   }, []);
@@ -85,16 +87,16 @@ export const OverlayDashboard: React.FC = () => {
 
   // Re-run aggregations on grid updates (which trigger when sorting/filtering changes)
   useEffect(() => {
-    if (isPaused) {
+    if (isPaused && isOverlayOpen) {
       computeAggregations();
       const unsubscribe = stateEngine.subscribeGrid(computeAggregations);
       return unsubscribe;
     }
-  }, [isPaused]);
+  }, [isPaused, isOverlayOpen]);
 
   // Handle Chart.js drawing
   useEffect(() => {
-    if (!isPaused || !showAnalytics) {
+    if (!isPaused || !isOverlayOpen || !showAnalytics) {
       destroyAllCharts();
       return;
     }
@@ -328,12 +330,12 @@ export const OverlayDashboard: React.FC = () => {
     return () => {
       destroyAllCharts();
     };
-  }, [isPaused, showAnalytics, aggregations.totalProjects, aggregations.statusCounts]);
+  }, [isPaused, isOverlayOpen, showAnalytics, aggregations.totalProjects, aggregations.statusCounts]);
 
   // Handle theme changes dynamically by updating chart options in place
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      if (!isPaused || !showAnalytics) return;
+      if (!isPaused || !isOverlayOpen || !showAnalytics) return;
       const isDark = document.body.classList.contains('dark-mode');
       const labelColor = isDark ? '#94A3B8' : '#64748B';
       const gridLineColor = isDark ? '#334155' : '#E2E8F0';
@@ -396,7 +398,7 @@ export const OverlayDashboard: React.FC = () => {
 
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
-  }, [isPaused, showAnalytics]);
+  }, [isPaused, isOverlayOpen, showAnalytics]);
 
   const destroyAllCharts = () => {
     if (deptChartInstance.current) {
@@ -417,12 +419,25 @@ export const OverlayDashboard: React.FC = () => {
     stateEngine.setPaused(false);
   };
 
-  if (!isPaused) return null;
+  if (!isPaused || !isOverlayOpen) return null;
 
   return (
     <div className="frozen-overlay">
       <div className="frozen-overlay-content">
         
+        {/* Close Button */}
+        <button 
+          className="overlay-close-btn"
+          onClick={() => stateEngine.setOverlayOpen(false)}
+          title="Back to Dashboard"
+          aria-label="Close analytics overlay"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
         {/* Header Section */}
         <div className="frozen-overlay-header">
           <div className="status-badge-container">
@@ -451,86 +466,99 @@ export const OverlayDashboard: React.FC = () => {
             </label>
           </div>
 
-          <button 
-            id="overlay-resume-btn" 
-            className="btn btn-primary" 
-            onClick={handleResumeStream}
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <span>Resume Live Stream</span>
-          </button>
-        </div>
+          <div style={{ display: 'flex', gap: 'var(--space-12)' }}>
+            <button 
+              id="overlay-dismiss-btn" 
+              className="btn btn-secondary" 
+              onClick={() => stateEngine.setOverlayOpen(false)}
+            >
+              <span>Back to Dashboard</span>
+            </button>
 
-        {/* Aggregated KPI Metrics Grid */}
-        <div className="overlay-kpis-grid">
-          <div className="overlay-kpi-card">
-            <span className="card-label">Active Projects</span>
-            <span className="card-value">{aggregations.totalProjects}</span>
-            <span className="card-subtext">Filtered subset</span>
-          </div>
-          <div className="overlay-kpi-card">
-            <span className="card-label">Aggregated Budget</span>
-            <span className="card-value">
-              {formatCurrency(aggregations.totalBudget).split('.')[0]}
-            </span>
-            <span className="card-subtext">Capital allocation</span>
-          </div>
-          <div className="overlay-kpi-card">
-            <span className="card-label">Annual Savings</span>
-            <span className="card-value" style={{ color: 'var(--color-success)' }}>
-              {formatCurrency(aggregations.totalSavings).split('.')[0]}
-            </span>
-            <span className="card-subtext">Financial return</span>
-          </div>
-          <div className="overlay-kpi-card">
-            <span className="card-label">Net Return (ROI)</span>
-            <span className="card-value" style={{ color: aggregations.netRoi >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
-              {formatPercent(aggregations.netRoi)}
-            </span>
-            <span className="card-subtext">Savings / budget</span>
-          </div>
-          <div className="overlay-kpi-card">
-            <span className="card-label">Robots Deployed</span>
-            <span className="card-value">{aggregations.totalRobots}</span>
-            <span className="card-subtext">Automated runners</span>
-          </div>
-          <div className="overlay-kpi-card">
-            <span className="card-label">FTE Hours Liberated</span>
-            <span className="card-value">{(aggregations.totalHoursSaved).toLocaleString()}</span>
-            <span className="card-subtext">Work hours saved</span>
+            <button 
+              id="overlay-resume-btn" 
+              className="btn btn-primary" 
+              onClick={handleResumeStream}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style={{ marginRight: '4px' }}>
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Resume Live Stream</span>
+            </button>
           </div>
         </div>
 
-        {/* Dynamically Generated Analytics Panel using Chart.js */}
-        {showAnalytics && (
-          <div className="overlay-analytics-panel">
-            <div className="analytics-chart-card span-12">
-              <h4>Department Telemetry Comparison</h4>
-              <p className="chart-description">Comparing allocated budget vs estimated savings by department</p>
-              <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
-                <canvas ref={deptChartRef}></canvas>
-              </div>
+        {/* Scrollable Body Container */}
+        <div className="frozen-overlay-body">
+          {/* Aggregated KPI Metrics Grid */}
+          <div className="overlay-kpis-grid">
+            <div className="overlay-kpi-card">
+              <span className="card-label">Active Projects</span>
+              <span className="card-value">{aggregations.totalProjects}</span>
+              <span className="card-subtext">Filtered subset</span>
             </div>
-            
-            <div className="analytics-chart-card span-6">
-              <h4>System Status Ratio</h4>
-              <p className="chart-description">Distribution of project run states</p>
-              <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
-                <canvas ref={statusChartRef}></canvas>
-              </div>
+            <div className="overlay-kpi-card">
+              <span className="card-label">Aggregated Budget</span>
+              <span className="card-value">
+                {formatCurrency(aggregations.totalBudget).split('.')[0]}
+              </span>
+              <span className="card-subtext">Capital allocation</span>
             </div>
-            
-            <div className="analytics-chart-card span-6">
-              <h4>Top 5 Savings by Industry</h4>
-              <p className="chart-description">Highest performing industries ranked by annual savings</p>
-              <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
-                <canvas ref={industryChartRef}></canvas>
-              </div>
+            <div className="overlay-kpi-card">
+              <span className="card-label">Annual Savings</span>
+              <span className="card-value" style={{ color: 'var(--color-success)' }}>
+                {formatCurrency(aggregations.totalSavings).split('.')[0]}
+              </span>
+              <span className="card-subtext">Financial return</span>
+            </div>
+            <div className="overlay-kpi-card">
+              <span className="card-label">Net Return (ROI)</span>
+              <span className="card-value" style={{ color: aggregations.netRoi >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
+                {formatPercent(aggregations.netRoi)}
+              </span>
+              <span className="card-subtext">Savings / budget</span>
+            </div>
+            <div className="overlay-kpi-card">
+              <span className="card-label">Robots Deployed</span>
+              <span className="card-value">{aggregations.totalRobots}</span>
+              <span className="card-subtext">Automated runners</span>
+            </div>
+            <div className="overlay-kpi-card">
+              <span className="card-label">FTE Hours Liberated</span>
+              <span className="card-value">{(aggregations.totalHoursSaved).toLocaleString()}</span>
+              <span className="card-subtext">Work hours saved</span>
             </div>
           </div>
-        )}
+
+          {/* Dynamically Generated Analytics Panel using Chart.js */}
+          {showAnalytics && (
+            <div className="overlay-analytics-panel">
+              <div className="analytics-chart-card span-12">
+                <h4>Department Telemetry Comparison</h4>
+                <p className="chart-description">Comparing allocated budget vs estimated savings by department</p>
+                <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
+                  <canvas ref={deptChartRef}></canvas>
+                </div>
+              </div>
+              
+              <div className="analytics-chart-card span-6">
+                <h4>System Status Ratio</h4>
+                <p className="chart-description">Distribution of project run states</p>
+                <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
+                  <canvas ref={statusChartRef}></canvas>
+                </div>
+              </div>
+              
+              <div className="analytics-chart-card span-6">
+                <h4>Top 5 Savings by Industry</h4>
+                <p className="chart-description">Highest performing industries ranked by annual savings</p>
+                <div className="chart-canvas-wrapper" style={{ position: 'relative', height: '250px' }}>
+                  <canvas ref={industryChartRef}></canvas>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
