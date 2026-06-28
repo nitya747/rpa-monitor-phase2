@@ -5,6 +5,7 @@ import { DashboardControls } from './components/DashboardControls';
 import { DepartmentChart } from './components/DepartmentChart';
 import { InfrastructureToggles } from './components/InfrastructureToggles';
 import { stateEngine } from './state/StateEngine';
+import { OverlayDashboard } from './components/OverlayDashboard';
 
 // Declare window extension for TypeScript
 declare global {
@@ -172,8 +173,12 @@ const App: React.FC = () => {
 
       {/* High-Performance Custom Virtualized DOM Grid */}
       {showGrid && <VirtualizedGrid visibleColumns={visibleColumns} />}
+
+      {/* Frozen Telemetry Overlay Dashboard */}
+      <OverlayDashboard />
     </div>
   );
+
 };
 
 export default App;

@@ -1,121 +1,189 @@
-(function () {
-  const industries = ["Finance", "Healthcare", "Retail", "Logistics", "IT", "Manufacturing", "Telecom", "Energy"];
-  const automationTypes = ["RPA", "Cognitive", "Chatbot", "Workflow", "AI Agent"];
-  const departments = ["Finance", "Operations", "HR", "IT", "Legal", "Sales", "Marketing", "Supply Chain"];
-  const partners = ["Accenture", "Deloitte", "PwC", "EY", "Infosys", "Wipro"];
-  const countries = ["USA", "India", "Germany", "UK", "Canada", "Australia", "Japan", "Brazil"];
-  const projectNames = [
-    "Invoice Processing Bot", "Customer Onboarding Auto", "Sales Ledger Syncer",
-    "Inventory Reconciliation", "Claim Validator", "Payroll Automator",
-    "Data Migrator Pro", "Compliance Reporter", "IT Helpdesk Assister",
-    "PO Generator", "Vendor Portal Scraper", "Feedback Analyzer",
-    "Logistics Dispatcher", "CRM Updater", "Billing Auditor"
-  ];
+/**
+ * ============================================================================
+ * OFFICIAL HACKATHON TELEMETRY PIPELINE ENGINE (dataStream.js)
+ * ============================================================================
+ * * HACKATHON PARTICIPANT INSTRUCTIONS:
+ * * 1. FILE LOCATION (CRITICAL FOR DEPLOYMENT):
+ * - Put your rpa_database_2026.csv file into your project's PUBLIC folder.
+ * • React (Vite / Create React App): /public/rpa_database_2026.csv
+ * • Next.js (App or Pages Router): /public/rpa_database_2026.csv
+ * - This allows the native Fetch API to resolve the file path correctly both 
+ * locally and on cloud deployments (Vercel, Netlify, GitHub Pages).
+ * * 2. INTEGRATION INTO SCRIPT TAG:
+ * - Load this script in your application root:
+ * • React (Vite): Add <script src="/dataStream.js"></script> in index.html.
+ * • Next.js: Use the Next.js Script Component in your root layout:
+ * <Script src="/dataStream.js" strategy="beforeInteractive" />
+ * * 3. REACT / NEXT.JS STATE HOOK EXAMPLE:
+ * Inside your high-performance grid component, initialize it like this:
+ * * useEffect(() => {
+ * if (typeof window !== 'undefined' && window.initializeRpaStream) {
+ * window.initializeRpaStream((incomingBatch) => {
+ * // FAST STATE ENGINE INTEGRATION
+ * YOUR_STATE_ENGINE.process(incomingBatch); 
+ * }, '/rpa_database_2026.csv');
+ * }
+ * }, []);
+ * * ============================================================================
+ */
 
-  // Generate initial database of 600 rows
-  const database = [];
-  for (let i = 1; i <= 600; i++) {
-    const id = `PRJ-${String(i).padStart(4, '0')}`;
-    const name = `${projectNames[i % projectNames.length]} ${Math.ceil(i / projectNames.length)}`;
-    const industry = industries[i % industries.length];
-    const dept = departments[i % departments.length];
-    const partner = partners[i % partners.length];
-    const country = countries[i % countries.length];
-    const autoType = automationTypes[i % automationTypes.length];
-    
-    // Mostly healthy, some warning, few critical, few failed
-    const rand = Math.random();
-    const status = rand > 0.95 ? "Failed" : (rand > 0.85 ? "critical" : (rand > 0.70 ? "warning" : "healthy"));
-    
-    const robots = Math.floor(Math.random() * 15) + 1;
-    const savings = Math.random() * 150000 + 5000;
-    const budget = Math.random() * 80000 + 3000;
-    
-    // roi_percent is (savings - budget) / budget or randomized. 
-    // Let's randomize around -0.2 to 4.5. Negative values trigger warnings.
-    let roi = Math.random() * 4.5 - 0.2; 
-    if (status === "Failed") {
-      roi = -Math.random() * 0.5 - 0.05; // failed projects have negative ROI
+(function() {
+  let memoryPool = [];
+  let subscribers = [];
+  let isInitialized = false;
+  let isFetching = false;
+
+  const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+  const mapStatus = (csvStatus, roiFraction) => {
+    if (roiFraction < 0) return 'Failed';
+    if (csvStatus === 'Completed') return 'healthy';
+    if (csvStatus === 'Planned') return 'healthy';
+    if (csvStatus === 'Active') {
+      if (roiFraction < 0.2) return 'critical';
+      if (roiFraction < 0.6) return 'warning';
+      return 'healthy';
     }
+    return 'healthy';
+  };
 
-    const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
-    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
-    const startDate = `2024-${month}-${day}`;
+  /**
+   * Native, highly-optimized CSV Parser
+   * Formats the static vendor spreadsheet matrix into a high-performance memory array.
+   */
+  const parseCSV = (csvText) => {
+    console.log("⚡ [Pipeline Engine] Parsing Official Hackathon CSV into Memory Pool...");
+    const lines = csvText.trim().split('\n');
     
-    const hoursSaved = Math.floor(Math.random() * 5000) + 50;
+    // Auto-detect comma or tab separation based on the headers
+    const headers = lines[0].split('\t').length > lines[0].split(',').length 
+      ? lines[0].split('\t').map(h => h.trim().replace('\r', '')) 
+      : lines[0].split(',').map(h => h.trim().replace('\r', ''));
+    
+    const parsedData = [];
 
-    database.push({
-      project_id: id,
-      company_id: `CO-${String(1000 + (i % 150)).padStart(4, '0')}`,
-      project_name: name,
-      project_status: status,
-      automation_type: autoType,
-      robots_deployed: robots,
-      annual_savings_usd: savings,
-      budget_usd: budget,
-      roi_percent: roi,
-      start_date: startDate,
-      employee_hours_saved: hoursSaved,
-      department: dept,
-      industry: industry,
-      implementation_partner: partner,
-      country: country,
-      last_updated: Date.now()
-    });
-  }
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      
+      // Handle both standard CSV and TSV clean strings
+      const values = lines[i].includes('\t') ? lines[i].split('\t') : lines[i].split(','); 
+      
+      if (values.length === headers.length) {
+        let rowObject = {};
+        
+        headers.forEach((header, index) => {
+          let val = values[index].trim();
+          
+          // Cast values to strict types for proper sorting and mathematical operations
+          if (['robots_deployed', 'budget_usd', 'annual_savings_usd', 'employee_hours_saved'].includes(header)) {
+            rowObject[header] = parseInt(val, 10) || 0;
+          } else if (header === 'roi_percent') {
+            rowObject[header] = (parseFloat(val) || 0.00) / 100; // Store as fraction (e.g. 1.584 for 158.4%)
+          } else {
+            rowObject[header] = val; // Metadata strings (Yes/No, Country, URLs)
+          }
+        });
+        
+        rowObject.internal_uid = rowObject.project_id || `uid-row-${i}`;
+        rowObject.last_updated = Date.now();
+        rowObject.csv_project_status = rowObject.project_status; // store original status
+        rowObject.project_status = mapStatus(rowObject.project_status, rowObject.roi_percent);
 
-  window.initializeRpaStream = function (callback) {
+        parsedData.push(rowObject);
+      }
+    }
+    return parsedData;
+  };
+
+  /**
+   * Global Stream Initialization Hook
+   * Exposed to the window scope to anchor directly to custom front-end viewports.
+   */
+  window.initializeRpaStream = async function(callback, csvUrl = '/automation_projects.csv') {
     if (typeof callback !== 'function') {
-      console.error('Callback must be a function');
+      console.error("❌ [Pipeline Error] initializeRpaStream requires a callback function execution loop.");
       return;
     }
 
-    // Send initial baseline batch
-    setTimeout(() => {
-      callback(database);
-    }, 100);
+    subscribers.push(callback);
 
-    // Then start streaming updates every 200ms
-    setInterval(() => {
-      const batchSize = Math.floor(Math.random() * 10) + 1; // 1 to 10 rows updated
-      const batch = [];
-      for (let i = 0; i < batchSize; i++) {
-        const index = Math.floor(Math.random() * database.length);
-        const row = database[index];
-        
-        // Modulate fields:
-        // Accumulate savings
-        row.annual_savings_usd += Math.random() * 200 + 10;
-        
-        // Maybe change robots deployed
-        if (Math.random() > 0.8) {
-          row.robots_deployed = Math.max(1, row.robots_deployed + (Math.random() > 0.5 ? 1 : -1));
-        }
-        
-        // Maybe change status
-        if (Math.random() > 0.93) {
-          const randStatus = Math.random();
-          row.project_status = randStatus > 0.95 ? "Failed" : (randStatus > 0.85 ? "critical" : (randStatus > 0.70 ? "warning" : "healthy"));
-          if (row.project_status === "Failed") {
-            row.roi_percent = -Math.random() * 0.5 - 0.05;
-          }
-        }
-        
-        // Maybe change ROI slightly
-        if (row.project_status !== "Failed" && Math.random() > 0.7) {
-          row.roi_percent = Math.max(-0.5, row.roi_percent + (Math.random() * 0.2 - 0.1));
-        }
-        
-        // Accumulate employee hours saved
-        if (Math.random() > 0.5) {
-          row.employee_hours_saved += Math.floor(Math.random() * 10) + 1;
-        }
+    // If already loaded and streaming, send baseline data instantly to the new subscriber
+    if (isInitialized) {
+      setTimeout(() => {
+        callback(memoryPool);
+      }, 50);
+      return;
+    }
 
-        row.last_updated = Date.now();
-        
-        batch.push({ ...row });
+    if (isFetching) {
+      return;
+    }
+    isFetching = true;
+
+    try {
+      console.log(`📦 [Pipeline Engine] Fetching schema baseline from target destination: ${csvUrl}`);
+      const response = await fetch(csvUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP network error! status: ${response.status}`);
       }
-      callback(batch);
-    }, 200);
+
+      const csvText = await response.text();
+      memoryPool = parseCSV(csvText);
+      isInitialized = true;
+      isFetching = false;
+      
+      console.log(`✅ [Pipeline Engine] Successfully mapped ${memoryPool.length} rows directly into RAM.`);
+      console.log("🚀 [Pipeline Engine] Starting high-frequency 200ms background execution firehose...");
+
+      // Send initial baseline to all current subscribers
+      subscribers.forEach(sub => sub(memoryPool));
+
+      // Telemetry firehose tick rate matching strict hackathon runtime constraints
+      setInterval(() => {
+        if (memoryPool.length === 0) return;
+
+        // Fluctuates an active cluster of records every cycle (5 to 50 updates per tick)
+        const batchSize = Math.floor(randomRange(5, 50)); 
+        const incomingBatch = [];
+
+        for (let i = 0; i < batchSize; i++) {
+          const targetIndex = Math.floor(randomRange(0, memoryPool.length));
+          const row = { ...memoryPool[targetIndex] }; // Shallow clone to decouple references
+
+          const isAnomaly = Math.random() > 0.95; // 5% chance of critical macro shifts
+          
+          if (isAnomaly) {
+            // Massive macro volatility injection
+            row.annual_savings_usd += Math.floor(randomRange(-50000, 50000));
+            row.robots_deployed += Math.floor(randomRange(-2, 2));
+            row.roi_percent = parseFloat((row.annual_savings_usd / row.budget_usd).toFixed(4));
+          } else {
+            // High-frequency standard operational telemetry noise
+            row.annual_savings_usd += Math.floor(randomRange(-5000, 10000));
+            row.robots_deployed += Math.max(-1, Math.min(2, Math.floor(randomRange(-1, 2))));
+            row.roi_percent = parseFloat((row.annual_savings_usd / row.budget_usd).toFixed(4));
+          }
+
+          // Strict downstream constraints: sanitize limits before pushing to components
+          row.annual_savings_usd = Math.max(0, row.annual_savings_usd);
+          row.robots_deployed = Math.max(1, row.robots_deployed);
+          row.project_status = mapStatus(row.csv_project_status, row.roi_percent);
+          row.last_updated = Date.now();
+
+          // Reflect metrics mutation in state cache
+          memoryPool[targetIndex] = row;
+          incomingBatch.push(row);
+        }
+
+        // Blast payload batch array to client-side callback system
+        subscribers.forEach(sub => sub(incomingBatch));
+      }, 200);
+
+    } catch (error) {
+      isFetching = false;
+      console.error("❌ [Pipeline Critical Crash] Could not initialize telemetry stream:", error);
+      console.error("👉 Fix Checklist: Verify server configuration, absolute path constraints, or check if the asset is missing inside your root public/ directory.");
+    }
   };
 })();
