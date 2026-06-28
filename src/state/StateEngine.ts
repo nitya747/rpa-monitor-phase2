@@ -33,6 +33,15 @@ class RpaStateEngine {
   };
   private sortState: { field: keyof RpaRow; direction: 'asc' | 'desc' }[] = [];
 
+  // Unique filter values collected from data stream
+  private uniqueDepartments: Set<string> = new Set();
+  private uniqueIndustries: Set<string> = new Set();
+  private uniqueTypes: Set<string> = new Set();
+
+  private cachedDepartments: string[] = [];
+  private cachedIndustries: string[] = [];
+  private cachedTypes: string[] = [];
+
   private summarySubscribers: Set<SummarySubscriber> = new Set();
   private gridSubscribers: Set<GridSubscriber> = new Set();
   private streamStateSubscribers: Set<StreamStateSubscriber> = new Set();
@@ -205,6 +214,7 @@ class RpaStateEngine {
   private ingestBatch(batch: RpaRow[]): void {
     let summaryChanged = false;
     let gridChanged = false;
+    let listsChanged = false;
 
     this.lastUpdatedIds.clear();
 
@@ -215,6 +225,29 @@ class RpaStateEngine {
       // Support old and new schema fields gracefully
       const newSavings = newRow.annual_savings_usd !== undefined ? newRow.annual_savings_usd : ((newRow as any).cumulative_savings || 0);
       const newStatus = newRow.project_status || (newRow as any).status || 'healthy';
+
+      // Track unique filter fields
+      if (newRow.department) {
+        const oldSize = this.uniqueDepartments.size;
+        this.uniqueDepartments.add(newRow.department);
+        if (this.uniqueDepartments.size !== oldSize) {
+          listsChanged = true;
+        }
+      }
+      if (newRow.industry) {
+        const oldSize = this.uniqueIndustries.size;
+        this.uniqueIndustries.add(newRow.industry);
+        if (this.uniqueIndustries.size !== oldSize) {
+          listsChanged = true;
+        }
+      }
+      if (newRow.automation_type) {
+        const oldSize = this.uniqueTypes.size;
+        this.uniqueTypes.add(newRow.automation_type);
+        if (this.uniqueTypes.size !== oldSize) {
+          listsChanged = true;
+        }
+      }
 
       if (existingRow) {
         const oldSavings = existingRow.annual_savings_usd !== undefined ? existingRow.annual_savings_usd : (existingRow as any).cumulative_savings || 0;
@@ -248,6 +281,12 @@ class RpaStateEngine {
         gridChanged = true;
       }
     });
+
+    if (listsChanged) {
+      this.cachedDepartments = Array.from(this.uniqueDepartments).sort();
+      this.cachedIndustries = Array.from(this.uniqueIndustries).sort();
+      this.cachedTypes = Array.from(this.uniqueTypes).sort();
+    }
 
     if (gridChanged) {
       this.recomputeIndex();
@@ -397,6 +436,29 @@ class RpaStateEngine {
         console.error('Error in grid subscriber:', e);
       }
     });
+  }
+
+  public getUniqueDepartments(): string[] {
+    return this.cachedDepartments;
+  }
+
+  public getUniqueIndustries(): string[] {
+    return this.cachedIndustries;
+  }
+
+  public getUniqueTypes(): string[] {
+    return this.cachedTypes;
+  }
+
+  public getFilteredRows(): RpaRow[] {
+    const result: RpaRow[] = [];
+    for (let i = 0; i < this.filteredRowIds.length; i++) {
+      const row = this.rows.get(this.filteredRowIds[i]);
+      if (row) {
+        result.push(row);
+      }
+    }
+    return result;
   }
 }
 

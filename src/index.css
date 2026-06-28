@@ -717,6 +717,7 @@ h1, h2, h3, h4, h5, h6 {
   top: 0;
   z-index: 5;
   box-sizing: border-box;
+  font-family: var(--font-mono);
 }
 
 .grid-header > span {
@@ -752,6 +753,8 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--bg-surface);
   transition: background-color 150ms ease;
   z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
 .grid-row:hover {
@@ -812,19 +815,7 @@ h1, h2, h3, h4, h5, h6 {
 .col-country { width: 6%; min-width: 90px; }
 .col-updated { width: 8%; min-width: 110px; }
 
-/* Sticky first column */
-.col-id {
-  position: sticky;
-  left: 0;
-  background-color: inherit;
-  z-index: 3;
-  border-right: 1px solid var(--border-color);
-}
 
-.grid-header .col-id {
-  background-color: var(--bg-surface-hover);
-  z-index: 6;
-}
 
 .text-right {
   text-align: right;

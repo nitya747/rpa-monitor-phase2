@@ -96,17 +96,34 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   const [industrySet, setIndustrySet] = useState<Set<string>>(stateEngine.getFilters().industry);
   const [deptSet, setDeptSet] = useState<Set<string>>(stateEngine.getFilters().department);
   const [typeSet, setTypeSet] = useState<Set<string>>(stateEngine.getFilters().automation_type);
+
+  const [industries, setIndustries] = useState<string[]>(stateEngine.getUniqueIndustries());
+  const [departments, setDepartments] = useState<string[]>(stateEngine.getUniqueDepartments());
+  const [automationTypes, setAutomationTypes] = useState<string[]>(stateEngine.getUniqueTypes());
   
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = stateEngine.subscribeStreamState((paused, count, overlayOpen) => {
+    const unsubscribeStream = stateEngine.subscribeStreamState((paused, count, overlayOpen) => {
       setIsPaused(paused);
       setBufferCount(count);
       setIsOverlayOpen(overlayOpen);
     });
-    return unsubscribe;
+
+    const updateLists = () => {
+      setIndustries(stateEngine.getUniqueIndustries());
+      setDepartments(stateEngine.getUniqueDepartments());
+      setAutomationTypes(stateEngine.getUniqueTypes());
+    };
+
+    updateLists();
+    const unsubscribeGrid = stateEngine.subscribeGrid(updateLists);
+
+    return () => {
+      unsubscribeStream();
+      unsubscribeGrid();
+    };
   }, []);
 
   useEffect(() => {
@@ -151,10 +168,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     setIsPaused(newPaused);
     stateEngine.setPaused(newPaused);
   };
-
-  const industries = ["Finance", "Healthcare", "Retail", "Logistics", "IT", "Manufacturing", "Telecom", "Energy"];
-  const departments = ["Finance", "Operations", "HR", "IT", "Legal", "Sales", "Marketing", "Supply Chain"];
-  const automationTypes = ["RPA", "Cognitive", "Chatbot", "Workflow", "AI Agent"];
 
   const columnsList = [
     { id: 'project_id', label: 'ID' },
