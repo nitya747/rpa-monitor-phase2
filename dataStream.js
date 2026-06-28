@@ -134,14 +134,27 @@
       isFetching = false;
       
       console.log(`✅ [Pipeline Engine] Successfully mapped ${memoryPool.length} rows directly into RAM.`);
-      console.log("🚀 [Pipeline Engine] Starting high-frequency 200ms background execution firehose...");
+      console.log("🚀 [Pipeline Engine] Starting high-frequency dynamic background execution firehose...");
+
+      // Initialize config object if not already present on window
+      window.rpaStreamConfig = window.rpaStreamConfig || {
+        anomalyMode: true,
+        aggressiveCadence: false,
+        loadBalancerOpt: true,
+        autoRecoveryMode: true
+      };
 
       // Send initial baseline to all current subscribers
       subscribers.forEach(sub => sub(memoryPool));
 
-      // Telemetry firehose tick rate matching strict hackathon runtime constraints
-      setInterval(() => {
-        if (memoryPool.length === 0) return;
+      const runTick = () => {
+        if (memoryPool.length === 0) {
+          setTimeout(runTick, 200);
+          return;
+        }
+
+        const config = window.rpaStreamConfig;
+        const tickRate = config.aggressiveCadence ? 100 : 200;
 
         // Fluctuates an active cluster of records every cycle (5 to 50 updates per tick)
         const batchSize = Math.floor(randomRange(5, 50)); 
@@ -151,7 +164,14 @@
           const targetIndex = Math.floor(randomRange(0, memoryPool.length));
           const row = { ...memoryPool[targetIndex] }; // Shallow clone to decouple references
 
-          const isAnomaly = Math.random() > 0.95; // 5% chance of critical macro shifts
+          // 4. Auto Recovery Mode: heals failed pipelines (roi_percent < 0) back to healthy
+          if (config.autoRecoveryMode && row.roi_percent < 0 && Math.random() > 0.6) {
+            row.annual_savings_usd = Math.floor(row.budget_usd * randomRange(0.6, 1.2));
+            row.roi_percent = parseFloat((row.annual_savings_usd / row.budget_usd).toFixed(4));
+          }
+
+          // 2. High-Anomaly Injection Mode: 5% chance if enabled, 0% chance if disabled
+          const isAnomaly = config.anomalyMode ? (Math.random() > 0.95) : false;
           
           if (isAnomaly) {
             // Massive macro volatility injection
@@ -160,7 +180,9 @@
             row.roi_percent = parseFloat((row.annual_savings_usd / row.budget_usd).toFixed(4));
           } else {
             // High-frequency standard operational telemetry noise
-            row.annual_savings_usd += Math.floor(randomRange(-5000, 10000));
+            // 3. Load Balancer Optimization: dampens drops by setting minimum change to 0 instead of -5000
+            const minDrift = config.loadBalancerOpt ? 0 : -5000;
+            row.annual_savings_usd += Math.floor(randomRange(minDrift, 10000));
             row.robots_deployed += Math.max(-1, Math.min(2, Math.floor(randomRange(-1, 2))));
             row.roi_percent = parseFloat((row.annual_savings_usd / row.budget_usd).toFixed(4));
           }
@@ -178,7 +200,13 @@
 
         // Blast payload batch array to client-side callback system
         subscribers.forEach(sub => sub(incomingBatch));
-      }, 200);
+
+        // Schedule next recursive tick with dynamic tickRate
+        setTimeout(runTick, tickRate);
+      };
+
+      // Start the recursive execution loop
+      setTimeout(runTick, 200);
 
     } catch (error) {
       isFetching = false;

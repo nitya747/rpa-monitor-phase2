@@ -1389,7 +1389,7 @@ input:checked + .slider:before {
   box-shadow: 0 3px 8px rgba(13, 148, 136, 0.25);
 }
 
-/* Sidebar Nav active override (rounded pill-shaped menu items) */
+/* Sidebar Nav active override (rounded layout) */
 .sidebar-nav {
   padding: var(--space-20) var(--space-12);
   gap: var(--space-4);
@@ -1397,7 +1397,7 @@ input:checked + .slider:before {
 
 .sidebar-nav-item {
   padding: var(--space-10) var(--space-16);
-  border-radius: 100px;
+  border-radius: 8px;
   font-weight: 500;
   font-size: 14.5px;
   position: relative;
@@ -1413,8 +1413,8 @@ input:checked + .slider:before {
 }
 
 .sidebar-nav-item.active {
-  background-color: rgba(13, 148, 136, 0.08) !important;
-  color: var(--primary-600) !important;
+  background-color: rgba(13, 148, 136, 0.06) !important;
+  color: var(--primary-700) !important;
   font-weight: 600;
   border-color: transparent;
 }
@@ -1423,47 +1423,24 @@ input:checked + .slider:before {
   color: var(--primary-600) !important;
 }
 
+/* Sidebar Footer & Theme Toggle card styling */
+.sidebar-footer {
+  padding: var(--space-16);
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
 
-/* Sidebar Profile Override */
-.sidebar-profile {
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-body);
+  padding: var(--space-10) var(--space-12);
+  border-radius: 8px;
   background-color: var(--bg-surface-hover);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: var(--space-12);
-  display: flex;
-  align-items: center;
-  gap: var(--space-12);
-  margin-top: auto;
-  position: relative;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-}
-
-.sidebar-profile:hover {
-  background-color: var(--border-color);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-}
-
-.dark-mode .sidebar-profile:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.sidebar-avatar {
-  background-color: #0D9488 !important;
-  color: #FFFFFF !important;
-  font-weight: 700;
-  border: none !important;
-  font-size: 12px;
-  width: 36px;
-  height: 36px;
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);
-}
-
-.profile-dropdown-arrow {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
 }
 
 /* Controls Panel Styles (Double Row Layout) */

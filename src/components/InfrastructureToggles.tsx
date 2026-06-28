@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export const InfrastructureToggles: React.FC = () => {
-  const [anomalyMode, setAnomalyMode] = useState(true);
-  const [aggressiveCadence, setAggressiveCadence] = useState(false);
-  const [loadBalancerOpt, setLoadBalancerOpt] = useState(true);
-  const [autoRecoveryMode, setAutoRecoveryMode] = useState(true);
+interface InfrastructureTogglesProps {
+  anomalyMode: boolean;
+  aggressiveCadence: boolean;
+  loadBalancerOpt: boolean;
+  autoRecoveryMode: boolean;
+  onToggleAnomaly: () => void;
+  onToggleCadence: () => void;
+  onToggleLoadBalancer: () => void;
+  onToggleAutoRecovery: () => void;
+}
 
+export const InfrastructureToggles: React.FC<InfrastructureTogglesProps> = ({
+  anomalyMode,
+  aggressiveCadence,
+  loadBalancerOpt,
+  autoRecoveryMode,
+  onToggleAnomaly,
+  onToggleCadence,
+  onToggleLoadBalancer,
+  onToggleAutoRecovery,
+}) => {
   return (
     <div className="card toggles-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="toggles-card-header">
@@ -34,7 +49,7 @@ export const InfrastructureToggles: React.FC = () => {
             <input 
               type="checkbox" 
               checked={anomalyMode} 
-              onChange={() => setAnomalyMode(!anomalyMode)} 
+              onChange={onToggleAnomaly} 
             />
             <span className="slider"></span>
           </label>
@@ -50,7 +65,7 @@ export const InfrastructureToggles: React.FC = () => {
             <input 
               type="checkbox" 
               checked={aggressiveCadence} 
-              onChange={() => setAggressiveCadence(!aggressiveCadence)} 
+              onChange={onToggleCadence} 
             />
             <span className="slider"></span>
           </label>
@@ -66,7 +81,7 @@ export const InfrastructureToggles: React.FC = () => {
             <input 
               type="checkbox" 
               checked={loadBalancerOpt} 
-              onChange={() => setLoadBalancerOpt(!loadBalancerOpt)} 
+              onChange={onToggleLoadBalancer} 
             />
             <span className="slider"></span>
           </label>
@@ -82,7 +97,7 @@ export const InfrastructureToggles: React.FC = () => {
             <input 
               type="checkbox" 
               checked={autoRecoveryMode} 
-              onChange={() => setAutoRecoveryMode(!autoRecoveryMode)} 
+              onChange={onToggleAutoRecovery} 
             />
             <span className="slider"></span>
           </label>

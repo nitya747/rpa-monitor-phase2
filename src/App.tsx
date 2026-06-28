@@ -25,6 +25,12 @@ const App: React.FC = () => {
   const [showChart, setShowChart] = useState(true);
   const [showToggles, setShowToggles] = useState(true);
 
+  // Infrastructure Toggles states
+  const [anomalyMode, setAnomalyMode] = useState(true);
+  const [aggressiveCadence, setAggressiveCadence] = useState(false);
+  const [loadBalancerOpt, setLoadBalancerOpt] = useState(true);
+  const [autoRecoveryMode, setAutoRecoveryMode] = useState(true);
+
   // High density columns visibility
   const [visibleColumns, setVisibleColumns] = useState<{ [key: string]: boolean }>({
     project_id: true,
@@ -44,7 +50,7 @@ const App: React.FC = () => {
     last_updated: true,
   });
 
-  // Load layout and theme from localStorage on mount
+  // Load layout, theme, and toggles from localStorage on mount
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem('rpa_monitor_theme') || 'light';
@@ -69,6 +75,25 @@ const App: React.FC = () => {
           }));
         }
       }
+
+      const savedAnomaly = localStorage.getItem('rpa_toggle_anomaly');
+      const savedCadence = localStorage.getItem('rpa_toggle_cadence');
+      const savedLoad = localStorage.getItem('rpa_toggle_load');
+      const savedRecovery = localStorage.getItem('rpa_toggle_recovery');
+
+      const config = {
+        anomalyMode: savedAnomaly !== null ? savedAnomaly === 'true' : true,
+        aggressiveCadence: savedCadence !== null ? savedCadence === 'true' : false,
+        loadBalancerOpt: savedLoad !== null ? savedLoad === 'true' : true,
+        autoRecoveryMode: savedRecovery !== null ? savedRecovery === 'true' : true,
+      };
+
+      setAnomalyMode(config.anomalyMode);
+      setAggressiveCadence(config.aggressiveCadence);
+      setLoadBalancerOpt(config.loadBalancerOpt);
+      setAutoRecoveryMode(config.autoRecoveryMode);
+
+      (window as any).rpaStreamConfig = config;
     } catch (e) {
       console.error('Failed to load configuration from localStorage:', e);
     }
@@ -127,6 +152,42 @@ const App: React.FC = () => {
     const nextVal = !showToggles;
     setShowToggles(nextVal);
     saveLayout(showKPIs, showChart, nextVal, visibleColumns);
+  };
+
+  const handleToggleAnomaly = () => {
+    const nextVal = !anomalyMode;
+    setAnomalyMode(nextVal);
+    localStorage.setItem('rpa_toggle_anomaly', String(nextVal));
+    if ((window as any).rpaStreamConfig) {
+      (window as any).rpaStreamConfig.anomalyMode = nextVal;
+    }
+  };
+
+  const handleToggleCadence = () => {
+    const nextVal = !aggressiveCadence;
+    setAggressiveCadence(nextVal);
+    localStorage.setItem('rpa_toggle_cadence', String(nextVal));
+    if ((window as any).rpaStreamConfig) {
+      (window as any).rpaStreamConfig.aggressiveCadence = nextVal;
+    }
+  };
+
+  const handleToggleLoadBalancer = () => {
+    const nextVal = !loadBalancerOpt;
+    setLoadBalancerOpt(nextVal);
+    localStorage.setItem('rpa_toggle_load', String(nextVal));
+    if ((window as any).rpaStreamConfig) {
+      (window as any).rpaStreamConfig.loadBalancerOpt = nextVal;
+    }
+  };
+
+  const handleToggleAutoRecovery = () => {
+    const nextVal = !autoRecoveryMode;
+    setAutoRecoveryMode(nextVal);
+    localStorage.setItem('rpa_toggle_recovery', String(nextVal));
+    if ((window as any).rpaStreamConfig) {
+      (window as any).rpaStreamConfig.autoRecoveryMode = nextVal;
+    }
   };
 
   const handleToggleColumn = (colId: string) => {
@@ -214,7 +275,7 @@ const App: React.FC = () => {
       id: 'automations',
       label: 'Automations',
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="11" width="18" height="10" rx="2" />
           <circle cx="12" cy="5" r="2" />
           <path d="M12 7v4M8 8h8" />
@@ -268,20 +329,6 @@ const App: React.FC = () => {
               <span className="slider"></span>
             </label>
           </div>
-
-          {/* User Profile info matching reference image */}
-          <div className="sidebar-profile">
-            <div className="sidebar-avatar">AD</div>
-            <div className="sidebar-profile-info">
-              <span className="sidebar-profile-name">Admin User</span>
-              <span className="sidebar-profile-role">Super Admin</span>
-            </div>
-            <div className="profile-dropdown-arrow">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-muted)' }}>
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -319,7 +366,7 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="font-mono text-muted" style={{ fontSize: '12px' }}>
-                  Tick Rate: <strong>200ms</strong>
+                  Tick Rate: <strong>{aggressiveCadence ? '100ms' : '200ms'}</strong>
                 </div>
               </div>
 
@@ -336,7 +383,16 @@ const App: React.FC = () => {
                   )}
                   {showToggles && (
                     <div className="toggles-panel-wrapper">
-                      <InfrastructureToggles />
+                      <InfrastructureToggles 
+                        anomalyMode={anomalyMode}
+                        aggressiveCadence={aggressiveCadence}
+                        loadBalancerOpt={loadBalancerOpt}
+                        autoRecoveryMode={autoRecoveryMode}
+                        onToggleAnomaly={handleToggleAnomaly}
+                        onToggleCadence={handleToggleCadence}
+                        onToggleLoadBalancer={handleToggleLoadBalancer}
+                        onToggleAutoRecovery={handleToggleAutoRecovery}
+                      />
                     </div>
                   )}
                 </div>
