@@ -8,6 +8,11 @@ export const KPIs: React.FC = () => {
     totalRowsProcessed: 0,
     activeRobotsDeployed: 0,
     globalCumulativeSavings: 0,
+    statusCounts: {
+      healthy: 0,
+      warning: 0,
+      critical: 0,
+    },
   });
 
   useEffect(() => {
@@ -33,6 +38,21 @@ export const KPIs: React.FC = () => {
         <span className="kpi-title">Cumulative Savings</span>
         <span className="kpi-value glow-green">{formatCurrency(metrics.globalCumulativeSavings)}</span>
         <span className="kpi-subtitle">Estimated financial ROI</span>
+      </div>
+      <div className="kpi-card">
+        <span className="kpi-title">System Health</span>
+        <div className="status-breakdown" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+          <span className="status-badge badge-healthy" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-healthy-glow)', color: 'var(--status-healthy)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+            {metrics.statusCounts.healthy} Healthy
+          </span>
+          <span className="status-badge badge-warning" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-warning-glow)', color: 'var(--status-warning)', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+            {metrics.statusCounts.warning} Warning
+          </span>
+          <span className="status-badge badge-critical" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-critical-glow)', color: 'var(--status-critical)', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+            {metrics.statusCounts.critical} Critical
+          </span>
+        </div>
+        <span className="kpi-subtitle" style={{ marginTop: 'auto' }}>Pipeline status distribution</span>
       </div>
     </div>
   );

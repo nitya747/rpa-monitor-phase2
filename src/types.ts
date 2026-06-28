@@ -13,7 +13,13 @@ export interface GlobalMetrics {
   totalRowsProcessed: number;
   activeRobotsDeployed: number;
   globalCumulativeSavings: number;
+  statusCounts: {
+    healthy: number;
+    warning: number;
+    critical: number;
+  };
 }
 
 export type SummarySubscriber = (metrics: GlobalMetrics) => void;
 export type GridSubscriber = () => void;
+export type StreamStateSubscriber = (isPaused: boolean, bufferCount: number) => void;
