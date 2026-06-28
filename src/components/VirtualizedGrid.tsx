@@ -18,13 +18,20 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
   const rowElementsRef = useRef<HTMLDivElement[]>([]);
   const cellElementsRef = useRef<{
     id: HTMLSpanElement;
+    company: HTMLSpanElement;
     name: HTMLSpanElement;
+    dept: HTMLSpanElement;
     industry: HTMLSpanElement;
-    robots: HTMLSpanElement;
-    savings: HTMLSpanElement;
-    roi: HTMLSpanElement;
+    type: HTMLSpanElement;
     statusCol: HTMLSpanElement;
     statusCell: HTMLSpanElement;
+    robots: HTMLSpanElement;
+    budget: HTMLSpanElement;
+    savings: HTMLSpanElement;
+    roi: HTMLSpanElement;
+    hours: HTMLSpanElement;
+    partner: HTMLSpanElement;
+    country: HTMLSpanElement;
     updated: HTMLSpanElement;
   }[]>([]);
 
@@ -78,29 +85,48 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
         rowEl.style.transform = `translateY(${dataIndex * ROW_HEIGHT}px)`;
         rowEl.style.display = 'flex';
 
+        // Retrieve properties supporting both schemas
+        const status = data.project_status || (data as any).status || 'healthy';
+        const savings = data.annual_savings_usd !== undefined ? data.annual_savings_usd : ((data as any).cumulative_savings || 0);
+        const roi = data.roi_percent !== undefined ? data.roi_percent : ((data as any).roi || 0);
+        const budget = data.budget_usd !== undefined ? data.budget_usd : 0;
+        const hours = data.employee_hours_saved !== undefined ? data.employee_hours_saved : 0;
+
         // Mutate contents directly (bypassing React render tree)
         updateCell(cells.id, visibleColumns.project_id, data.project_id);
+        updateCell(cells.company, visibleColumns.company_id, data.company_id || '');
         updateCell(cells.name, visibleColumns.project_name, data.project_name);
+        updateCell(cells.dept, visibleColumns.department, data.department || '');
         updateCell(cells.industry, visibleColumns.industry, data.industry);
+        updateCell(cells.type, visibleColumns.automation_type, data.automation_type || '');
         updateCell(cells.robots, visibleColumns.robots_deployed, data.robots_deployed.toString());
-        updateCell(cells.savings, visibleColumns.cumulative_savings, formatCurrency(data.cumulative_savings));
-        updateCell(cells.roi, visibleColumns.roi, formatPercent(data.roi));
+        updateCell(cells.budget, visibleColumns.budget_usd, formatCurrency(budget));
+        updateCell(cells.savings, visibleColumns.annual_savings_usd, formatCurrency(savings));
+        updateCell(cells.roi, visibleColumns.roi_percent, formatPercent(roi));
+        updateCell(cells.hours, visibleColumns.employee_hours_saved, hours.toLocaleString());
+        updateCell(cells.partner, visibleColumns.implementation_partner, data.implementation_partner || '');
+        updateCell(cells.country, visibleColumns.country, data.country || '');
         
-        if (!visibleColumns.status) {
+        if (!visibleColumns.project_status) {
           cells.statusCol.style.display = 'none';
         } else {
           cells.statusCol.style.display = '';
-          updateCell(cells.statusCell, true, data.status, `cell-status status-${data.status}`);
+          updateCell(cells.statusCell, true, status, `cell-status status-${status}`);
         }
         
         updateCell(cells.updated, visibleColumns.last_updated, new Date(data.last_updated).toLocaleTimeString());
 
-        // Cell Flashing on update (memory-leak free)
+        // Warning alerts & Cell Flashing on update (memory-leak free)
         const isRecentlyUpdated = stateEngine.getLastUpdatedIds().has(data.project_id);
         if (isRecentlyUpdated) {
-          const flashClass = data.status === 'critical' 
-            ? 'flash-critical' 
-            : (data.status === 'warning' ? 'flash-warning' : 'flash-healthy');
+          let flashClass = 'flash-healthy';
+          if (status === 'Failed' || roi < 0) {
+            flashClass = 'flash-critical'; // warning hue for failure or negative ROI
+          } else if (status === 'critical') {
+            flashClass = 'flash-critical';
+          } else if (status === 'warning') {
+            flashClass = 'flash-warning';
+          }
           
           // First, run any active cleanup to remove old listener/class cleanly
           if ((rowEl as any)._cleanupFlash) {
@@ -206,7 +232,12 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
       <div className="grid-header">
         {visibleColumns.project_id && (
           <span className="col-id clickable" onClick={(e) => handleHeaderClick('project_id', e)}>
-            Project ID{renderSortIndicator('project_id')}
+            ID{renderSortIndicator('project_id')}
+          </span>
+        )}
+        {visibleColumns.company_id && (
+          <span className="col-company clickable" onClick={(e) => handleHeaderClick('company_id', e)}>
+            Co ID{renderSortIndicator('company_id')}
           </span>
         )}
         {visibleColumns.project_name && (
@@ -214,9 +245,24 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
             Name{renderSortIndicator('project_name')}
           </span>
         )}
+        {visibleColumns.department && (
+          <span className="col-dept clickable" onClick={(e) => handleHeaderClick('department', e)}>
+            Dept{renderSortIndicator('department')}
+          </span>
+        )}
         {visibleColumns.industry && (
           <span className="col-industry clickable" onClick={(e) => handleHeaderClick('industry', e)}>
             Industry{renderSortIndicator('industry')}
+          </span>
+        )}
+        {visibleColumns.automation_type && (
+          <span className="col-type clickable" onClick={(e) => handleHeaderClick('automation_type', e)}>
+            Type{renderSortIndicator('automation_type')}
+          </span>
+        )}
+        {visibleColumns.project_status && (
+          <span className="col-status clickable" onClick={(e) => handleHeaderClick('project_status', e)}>
+            Status{renderSortIndicator('project_status')}
           </span>
         )}
         {visibleColumns.robots_deployed && (
@@ -224,24 +270,39 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
             Robots{renderSortIndicator('robots_deployed')}
           </span>
         )}
-        {visibleColumns.cumulative_savings && (
-          <span className="col-savings text-right clickable" onClick={(e) => handleHeaderClick('cumulative_savings', e)}>
-            Savings{renderSortIndicator('cumulative_savings')}
+        {visibleColumns.budget_usd && (
+          <span className="col-budget text-right clickable" onClick={(e) => handleHeaderClick('budget_usd', e)}>
+            Budget{renderSortIndicator('budget_usd')}
           </span>
         )}
-        {visibleColumns.roi && (
-          <span className="col-roi text-right clickable" onClick={(e) => handleHeaderClick('roi', e)}>
-            ROI{renderSortIndicator('roi')}
+        {visibleColumns.annual_savings_usd && (
+          <span className="col-savings text-right clickable" onClick={(e) => handleHeaderClick('annual_savings_usd', e)}>
+            Savings{renderSortIndicator('annual_savings_usd')}
           </span>
         )}
-        {visibleColumns.status && (
-          <span className="col-status clickable" onClick={(e) => handleHeaderClick('status', e)}>
-            Status{renderSortIndicator('status')}
+        {visibleColumns.roi_percent && (
+          <span className="col-roi text-right clickable" onClick={(e) => handleHeaderClick('roi_percent', e)}>
+            ROI{renderSortIndicator('roi_percent')}
+          </span>
+        )}
+        {visibleColumns.employee_hours_saved && (
+          <span className="col-hours text-right clickable" onClick={(e) => handleHeaderClick('employee_hours_saved', e)}>
+            Hours{renderSortIndicator('employee_hours_saved')}
+          </span>
+        )}
+        {visibleColumns.implementation_partner && (
+          <span className="col-partner clickable" onClick={(e) => handleHeaderClick('implementation_partner', e)}>
+            Partner{renderSortIndicator('implementation_partner')}
+          </span>
+        )}
+        {visibleColumns.country && (
+          <span className="col-country clickable" onClick={(e) => handleHeaderClick('country', e)}>
+            Country{renderSortIndicator('country')}
           </span>
         )}
         {visibleColumns.last_updated && (
           <span className="col-updated clickable" onClick={(e) => handleHeaderClick('last_updated', e)}>
-            Last Updated{renderSortIndicator('last_updated')}
+            Updated{renderSortIndicator('last_updated')}
           </span>
         )}
       </div>
@@ -267,36 +328,57 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({ visibleColumns
                 rowElementsRef.current[index] = el;
                 // Query and cache cells on mount
                 const id = el.querySelector('.col-id') as HTMLSpanElement;
+                const company = el.querySelector('.col-company') as HTMLSpanElement;
                 const name = el.querySelector('.col-name') as HTMLSpanElement;
+                const dept = el.querySelector('.col-dept') as HTMLSpanElement;
                 const industry = el.querySelector('.col-industry') as HTMLSpanElement;
-                const robots = el.querySelector('.col-robots') as HTMLSpanElement;
-                const savings = el.querySelector('.col-savings') as HTMLSpanElement;
-                const roi = el.querySelector('.col-roi') as HTMLSpanElement;
+                const type = el.querySelector('.col-type') as HTMLSpanElement;
                 const statusCol = el.querySelector('.col-status') as HTMLSpanElement;
                 const statusCell = el.querySelector('.cell-status') as HTMLSpanElement;
+                const robots = el.querySelector('.col-robots') as HTMLSpanElement;
+                const budget = el.querySelector('.col-budget') as HTMLSpanElement;
+                const savings = el.querySelector('.col-savings') as HTMLSpanElement;
+                const roi = el.querySelector('.col-roi') as HTMLSpanElement;
+                const hours = el.querySelector('.col-hours') as HTMLSpanElement;
+                const partner = el.querySelector('.col-partner') as HTMLSpanElement;
+                const country = el.querySelector('.col-country') as HTMLSpanElement;
                 const updated = el.querySelector('.col-updated') as HTMLSpanElement;
 
                 cellElementsRef.current[index] = {
                   id,
+                  company,
                   name,
+                  dept,
                   industry,
-                  robots,
-                  savings,
-                  roi,
+                  type,
                   statusCol,
                   statusCell,
+                  robots,
+                  budget,
+                  savings,
+                  roi,
+                  hours,
+                  partner,
+                  country,
                   updated
                 };
               }
             }}
           >
             <span className="col-id font-mono"></span>
+            <span className="col-company font-mono"></span>
             <span className="col-name text-semibold"></span>
+            <span className="col-dept"></span>
             <span className="col-industry"></span>
+            <span className="col-type"></span>
+            <span className="col-status"><span className="cell-status"></span></span>
             <span className="col-robots text-right font-mono"></span>
+            <span className="col-budget text-right font-mono"></span>
             <span className="col-savings text-right font-mono"></span>
             <span className="col-roi text-right font-mono"></span>
-            <span className="col-status"><span className="cell-status"></span></span>
+            <span className="col-hours text-right font-mono"></span>
+            <span className="col-partner"></span>
+            <span className="col-country"></span>
             <span className="col-updated font-mono text-muted"></span>
           </div>
         ))}

@@ -5,6 +5,7 @@ class RpaStateEngine {
   private rowIds: string[] = []; // maintain stable insertion order
   private filteredRowIds: string[] = []; // active visible/sorted/filtered row IDs
   private lastUpdatedIds: Set<string> = new Set();
+  
   private metrics: GlobalMetrics = {
     totalRowsProcessed: 0,
     activeRobotsDeployed: 0,
@@ -13,6 +14,7 @@ class RpaStateEngine {
       healthy: 0,
       warning: 0,
       critical: 0,
+      Failed: 0,
     },
   };
 
@@ -23,8 +25,10 @@ class RpaStateEngine {
   // Sort & Filter state
   private searchQuery: string = '';
   private filters = {
-    industry: '',
-    status: '',
+    industry: new Set<string>(),
+    department: new Set<string>(),
+    automation_type: new Set<string>(),
+    status: '', // single select project_status
   };
   private sortState: { field: keyof RpaRow; direction: 'asc' | 'desc' }[] = [];
 
@@ -137,15 +141,31 @@ class RpaStateEngine {
     return [...this.sortState];
   }
 
-  // Set filters
-  public setFilter(type: 'industry' | 'status', value: string): void {
-    this.filters[type] = value;
+  // Set filters (multi-select supports check state)
+  public toggleFilter(type: 'industry' | 'department' | 'automation_type', value: string, isChecked: boolean): void {
+    const filterSet = this.filters[type];
+    if (isChecked) {
+      filterSet.add(value);
+    } else {
+      filterSet.delete(value);
+    }
     this.recomputeIndex();
     this.notifyGrid();
   }
 
-  public getFilters(): { industry: string; status: string } {
-    return { ...this.filters };
+  public setStatusFilter(status: string): void {
+    this.filters.status = status;
+    this.recomputeIndex();
+    this.notifyGrid();
+  }
+
+  public getFilters() {
+    return {
+      industry: new Set(this.filters.industry),
+      department: new Set(this.filters.department),
+      automation_type: new Set(this.filters.automation_type),
+      status: this.filters.status,
+    };
   }
 
   // Set search query
@@ -163,7 +183,7 @@ class RpaStateEngine {
   public applyBatch(batch: RpaRow[]): void {
     if (this.isPaused) {
       this.bufferQueue.push(...batch);
-      this.notifyStreamState(); // notify stream state subscribers of new buffer count
+      this.notifyStreamState();
       return;
     }
     this.ingestBatch(batch);
@@ -179,16 +199,23 @@ class RpaStateEngine {
       this.lastUpdatedIds.add(newRow.project_id);
       const existingRow = this.rows.get(newRow.project_id);
 
+      // Support old and new schema fields gracefully
+      const newSavings = newRow.annual_savings_usd !== undefined ? newRow.annual_savings_usd : ((newRow as any).cumulative_savings || 0);
+      const newStatus = newRow.project_status || (newRow as any).status || 'healthy';
+
       if (existingRow) {
+        const oldSavings = existingRow.annual_savings_usd !== undefined ? existingRow.annual_savings_usd : (existingRow as any).cumulative_savings || 0;
+        const oldStatus = existingRow.project_status || (existingRow as any).status || 'healthy';
+
         this.metrics.activeRobotsDeployed -= existingRow.robots_deployed;
-        this.metrics.globalCumulativeSavings -= existingRow.cumulative_savings;
+        this.metrics.globalCumulativeSavings -= oldSavings;
 
         this.metrics.activeRobotsDeployed += newRow.robots_deployed;
-        this.metrics.globalCumulativeSavings += newRow.cumulative_savings;
+        this.metrics.globalCumulativeSavings += newSavings;
 
         // Incrementally update status counts
-        this.metrics.statusCounts[existingRow.status]--;
-        this.metrics.statusCounts[newRow.status]++;
+        this.metrics.statusCounts[oldStatus]--;
+        this.metrics.statusCounts[newStatus]++;
 
         this.rows.set(newRow.project_id, newRow);
         summaryChanged = true;
@@ -196,10 +223,10 @@ class RpaStateEngine {
       } else {
         this.metrics.totalRowsProcessed += 1;
         this.metrics.activeRobotsDeployed += newRow.robots_deployed;
-        this.metrics.globalCumulativeSavings += newRow.cumulative_savings;
+        this.metrics.globalCumulativeSavings += newSavings;
 
         // Incrementally update status counts
-        this.metrics.statusCounts[newRow.status]++;
+        this.metrics.statusCounts[newStatus]++;
 
         this.rows.set(newRow.project_id, newRow);
         this.rowIds.push(newRow.project_id);
@@ -238,23 +265,47 @@ class RpaStateEngine {
   public recomputeIndex(): void {
     let result = [...this.rowIds];
 
-    // 1. Apply Industry & Status Filters & Search
-    if (this.filters.industry || this.filters.status || this.searchQuery) {
+    // 1. Apply Filters & Search
+    const hasFilters = 
+      this.filters.industry.size > 0 || 
+      this.filters.department.size > 0 || 
+      this.filters.automation_type.size > 0 || 
+      this.filters.status || 
+      this.searchQuery;
+
+    if (hasFilters) {
       const queryTokens = this.searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
 
       result = result.filter((id) => {
         const row = this.rows.get(id);
         if (!row) return false;
 
-        if (this.filters.industry && row.industry !== this.filters.industry) {
+        const rowIndustry = row.industry || '';
+        const rowDept = row.department || '';
+        const rowAutoType = row.automation_type || '';
+        const rowStatus = row.project_status || (row as any).status || 'healthy';
+
+        if (this.filters.industry.size > 0 && !this.filters.industry.has(rowIndustry)) {
           return false;
         }
-        if (this.filters.status && row.status !== this.filters.status) {
+        if (this.filters.department.size > 0 && !this.filters.department.has(rowDept)) {
+          return false;
+        }
+        if (this.filters.automation_type.size > 0 && !this.filters.automation_type.has(rowAutoType)) {
+          return false;
+        }
+        if (this.filters.status && rowStatus !== this.filters.status) {
           return false;
         }
 
         if (queryTokens.length > 0) {
-          const searchableText = `${row.project_id} ${row.project_name} ${row.industry} ${row.status}`.toLowerCase();
+          // Search project_name, company_id, implementation_partner, and country
+          const pName = row.project_name || '';
+          const cId = row.company_id || '';
+          const partner = row.implementation_partner || '';
+          const country = row.country || '';
+          
+          const searchableText = `${pName} ${cId} ${partner} ${country}`.toLowerCase();
           for (const token of queryTokens) {
             if (!searchableText.includes(token)) {
               return false;
@@ -277,8 +328,20 @@ class RpaStateEngine {
           const field = sort.field;
           const dir = sort.direction === 'asc' ? 1 : -1;
 
-          const valA = a[field];
-          const valB = b[field];
+          let valA = a[field];
+          let valB = b[field];
+
+          // Fallbacks for compatibility
+          if (field === 'roi_percent' && valA === undefined) {
+            valA = (a as any).roi;
+            valB = (b as any).roi;
+          }
+          if (field === 'annual_savings_usd' && valA === undefined) {
+            valA = (a as any).cumulative_savings;
+            valB = (b as any).cumulative_savings;
+          }
+
+          if (valA === undefined || valB === undefined) continue;
 
           if (typeof valA === 'string' && typeof valB === 'string') {
             const cmp = valA.localeCompare(valB, undefined, { sensitivity: 'base', numeric: true });

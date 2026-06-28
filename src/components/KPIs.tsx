@@ -12,6 +12,7 @@ export const KPIs: React.FC = () => {
       healthy: 0,
       warning: 0,
       critical: 0,
+      Failed: 0,
     },
   });
 
@@ -41,15 +42,18 @@ export const KPIs: React.FC = () => {
       </div>
       <div className="kpi-card">
         <span className="kpi-title">System Health</span>
-        <div className="status-breakdown" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-          <span className="status-badge badge-healthy" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-healthy-glow)', color: 'var(--status-healthy)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+        <div className="status-breakdown" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+          <span className="status-badge badge-healthy" style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--status-healthy-glow)', color: 'var(--status-healthy)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '0.8rem', fontWeight: 600 }}>
             {metrics.statusCounts.healthy} Healthy
           </span>
-          <span className="status-badge badge-warning" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-warning-glow)', color: 'var(--status-warning)', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+          <span className="status-badge badge-warning" style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--status-warning-glow)', color: 'var(--status-warning)', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.8rem', fontWeight: 600 }}>
             {metrics.statusCounts.warning} Warning
           </span>
-          <span className="status-badge badge-critical" style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'var(--status-critical-glow)', color: 'var(--status-critical)', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.85rem', fontWeight: 600 }}>
+          <span className="status-badge badge-critical" style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'var(--status-critical-glow)', color: 'var(--status-critical)', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.8rem', fontWeight: 600 }}>
             {metrics.statusCounts.critical} Critical
+          </span>
+          <span className="status-badge badge-Failed">
+            {metrics.statusCounts.Failed || 0} Failed
           </span>
         </div>
         <span className="kpi-subtitle" style={{ marginTop: 'auto' }}>Pipeline status distribution</span>

@@ -1,25 +1,102 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { stateEngine } from '../state/StateEngine';
 
 interface DashboardControlsProps {
   showKPIs: boolean;
   onToggleKPIs: () => void;
+  showGrid: boolean;
+  onToggleGrid: () => void;
+  showChart: boolean;
+  onToggleChart: () => void;
+  showToggles: boolean;
+  onToggleToggles: () => void;
   visibleColumns: { [key: string]: boolean };
   onToggleColumn: (colId: string) => void;
 }
 
+interface MultiSelectDropdownProps {
+  label: string;
+  options: string[];
+  selectedValues: Set<string>;
+  onToggle: (value: string, checked: boolean) => void;
+}
+
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
+  label,
+  options,
+  selectedValues,
+  onToggle,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const triggerLabel = selectedValues.size === 0
+    ? `All ${label}s`
+    : `${selectedValues.size} ${label}${selectedValues.size > 1 ? 's' : ''}`;
+
+  return (
+    <div className="multi-select-container" ref={dropdownRef}>
+      <button 
+        type="button" 
+        className="multi-select-trigger" 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {triggerLabel}
+      </button>
+      {isOpen && (
+        <div className="multi-select-dropdown-list">
+          {options.map((opt) => {
+            const isChecked = selectedValues.has(opt);
+            return (
+              <label key={opt} className="checkbox-label" style={{ padding: '0.3rem 0.5rem', whiteSpace: 'nowrap' }}>
+                <input 
+                  type="checkbox" 
+                  checked={isChecked} 
+                  onChange={(e) => onToggle(opt, e.target.checked)} 
+                />
+                <span>{opt}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const DashboardControls: React.FC<DashboardControlsProps> = ({
   showKPIs,
   onToggleKPIs,
+  showGrid,
+  onToggleGrid,
+  showChart,
+  onToggleChart,
+  showToggles,
+  onToggleToggles,
   visibleColumns,
   onToggleColumn,
 }) => {
   const [search, setSearch] = useState(stateEngine.getSearchQuery());
-  const [industry, setIndustry] = useState(stateEngine.getFilters().industry);
-  const [status, setStatus] = useState(stateEngine.getFilters().status);
   const [isPaused, setIsPaused] = useState(stateEngine.getPaused());
   const [bufferCount, setBufferCount] = useState(stateEngine.getBufferCount());
+  const [status, setStatus] = useState(stateEngine.getFilters().status);
+  
+  const [industrySet, setIndustrySet] = useState<Set<string>>(stateEngine.getFilters().industry);
+  const [deptSet, setDeptSet] = useState<Set<string>>(stateEngine.getFilters().department);
+  const [typeSet, setTypeSet] = useState<Set<string>>(stateEngine.getFilters().automation_type);
+  
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const layoutDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = stateEngine.subscribeStreamState((paused, count) => {
@@ -29,22 +106,41 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (layoutDropdownRef.current && !layoutDropdownRef.current.contains(e.target as Node)) {
+        setShowLayoutMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearch(val);
     stateEngine.setSearch(val);
   };
 
-  const handleIndustryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setIndustry(val);
-    stateEngine.setFilter('industry', val);
-  };
-
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setStatus(val);
-    stateEngine.setFilter('status', val);
+    stateEngine.setStatusFilter(val);
+  };
+
+  const handleToggleIndustry = (val: string, isChecked: boolean) => {
+    stateEngine.toggleFilter('industry', val, isChecked);
+    setIndustrySet(stateEngine.getFilters().industry);
+  };
+
+  const handleToggleDept = (val: string, isChecked: boolean) => {
+    stateEngine.toggleFilter('department', val, isChecked);
+    setDeptSet(stateEngine.getFilters().department);
+  };
+
+  const handleToggleType = (val: string, isChecked: boolean) => {
+    stateEngine.toggleFilter('automation_type', val, isChecked);
+    setTypeSet(stateEngine.getFilters().automation_type);
   };
 
   const handleTogglePause = () => {
@@ -54,14 +150,24 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   };
 
   const industries = ["Finance", "Healthcare", "Retail", "Logistics", "IT", "Manufacturing", "Telecom", "Energy"];
+  const departments = ["Finance", "Operations", "HR", "IT", "Legal", "Sales", "Marketing", "Supply Chain"];
+  const automationTypes = ["RPA", "Cognitive", "Chatbot", "Workflow", "AI Agent"];
+
   const columnsList = [
-    { id: 'project_id', label: 'Project ID' },
+    { id: 'project_id', label: 'ID' },
+    { id: 'company_id', label: 'Co ID' },
     { id: 'project_name', label: 'Name' },
+    { id: 'department', label: 'Department' },
     { id: 'industry', label: 'Industry' },
+    { id: 'automation_type', label: 'Automation Type' },
+    { id: 'project_status', label: 'Status' },
     { id: 'robots_deployed', label: 'Robots' },
-    { id: 'cumulative_savings', label: 'Savings' },
-    { id: 'roi', label: 'ROI' },
-    { id: 'status', label: 'Status' },
+    { id: 'budget_usd', label: 'Budget' },
+    { id: 'annual_savings_usd', label: 'Annual Savings' },
+    { id: 'roi_percent', label: 'ROI %' },
+    { id: 'employee_hours_saved', label: 'Hours Saved' },
+    { id: 'implementation_partner', label: 'Partner' },
+    { id: 'country', label: 'Country' },
     { id: 'last_updated', label: 'Last Updated' },
   ];
 
@@ -77,26 +183,41 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
           <input
             id="fuzzy-search-input"
             type="text"
-            placeholder="Search Project ID, Name, Industry..."
+            placeholder="Search Name, Company, Partner, Country..."
             value={search}
             onChange={handleSearchChange}
           />
         </div>
 
         {/* Filters */}
-        <div className="filter-group">
-          <select id="industry-filter" value={industry} onChange={handleIndustryChange}>
-            <option value="">All Industries</option>
-            {industries.map((ind) => (
-              <option key={ind} value={ind}>{ind}</option>
-            ))}
-          </select>
+        <div className="filter-group" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <MultiSelectDropdown
+            label="Industry"
+            options={industries}
+            selectedValues={industrySet}
+            onToggle={handleToggleIndustry}
+          />
 
-          <select id="status-filter" value={status} onChange={handleStatusChange}>
+          <MultiSelectDropdown
+            label="Department"
+            options={departments}
+            selectedValues={deptSet}
+            onToggle={handleToggleDept}
+          />
+
+          <MultiSelectDropdown
+            label="Type"
+            options={automationTypes}
+            selectedValues={typeSet}
+            onToggle={handleToggleType}
+          />
+
+          <select id="status-filter" value={status} onChange={handleStatusChange} style={{ minWidth: '130px' }}>
             <option value="">All Statuses</option>
             <option value="healthy">Healthy</option>
             <option value="warning">Warning</option>
             <option value="critical">Critical</option>
+            <option value="Failed">Failed</option>
           </select>
         </div>
 
@@ -126,7 +247,7 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
           </button>
 
           {/* Layout Persistence Configuration button */}
-          <div className="layout-config-container">
+          <div className="layout-config-container" ref={layoutDropdownRef}>
             <button
               id="layout-panel-toggle-btn"
               className="btn-layout"
@@ -151,8 +272,32 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
                     />
                     <span>Show KPIs Panel</span>
                   </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={showChart}
+                      onChange={onToggleChart}
+                    />
+                    <span>Show Department Chart</span>
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={showToggles}
+                      onChange={onToggleToggles}
+                    />
+                    <span>Show Infrastructure Toggles</span>
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={showGrid}
+                      onChange={onToggleGrid}
+                    />
+                    <span>Show Grid Window</span>
+                  </label>
                 </div>
-                <div className="layout-menu-section">
+                <div className="layout-menu-section" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   <span className="layout-menu-title">Visible Columns</span>
                   {columnsList.map((col) => (
                     <label key={col.id} className="checkbox-label">

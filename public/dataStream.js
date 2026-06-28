@@ -1,6 +1,9 @@
 (function () {
   const industries = ["Finance", "Healthcare", "Retail", "Logistics", "IT", "Manufacturing", "Telecom", "Energy"];
-  const statuses = ["healthy", "warning", "critical"];
+  const automationTypes = ["RPA", "Cognitive", "Chatbot", "Workflow", "AI Agent"];
+  const departments = ["Finance", "Operations", "HR", "IT", "Legal", "Sales", "Marketing", "Supply Chain"];
+  const partners = ["Accenture", "Deloitte", "PwC", "EY", "Infosys", "Wipro"];
+  const countries = ["USA", "India", "Germany", "UK", "Canada", "Australia", "Japan", "Brazil"];
   const projectNames = [
     "Invoice Processing Bot", "Customer Onboarding Auto", "Sales Ledger Syncer",
     "Inventory Reconciliation", "Claim Validator", "Payroll Automator",
@@ -15,20 +18,48 @@
     const id = `PRJ-${String(i).padStart(4, '0')}`;
     const name = `${projectNames[i % projectNames.length]} ${Math.ceil(i / projectNames.length)}`;
     const industry = industries[i % industries.length];
-    // Mostly healthy, some warning, few critical
+    const dept = departments[i % departments.length];
+    const partner = partners[i % partners.length];
+    const country = countries[i % countries.length];
+    const autoType = automationTypes[i % automationTypes.length];
+    
+    // Mostly healthy, some warning, few critical, few failed
     const rand = Math.random();
-    const status = rand > 0.9 ? "critical" : (rand > 0.75 ? "warning" : "healthy");
+    const status = rand > 0.95 ? "Failed" : (rand > 0.85 ? "critical" : (rand > 0.70 ? "warning" : "healthy"));
+    
     const robots = Math.floor(Math.random() * 15) + 1;
     const savings = Math.random() * 150000 + 5000;
-    const roi = Math.random() * 4 + 0.5; // 50% to 450%
+    const budget = Math.random() * 80000 + 3000;
+    
+    // roi_percent is (savings - budget) / budget or randomized. 
+    // Let's randomize around -0.2 to 4.5. Negative values trigger warnings.
+    let roi = Math.random() * 4.5 - 0.2; 
+    if (status === "Failed") {
+      roi = -Math.random() * 0.5 - 0.05; // failed projects have negative ROI
+    }
+
+    const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    const startDate = `2024-${month}-${day}`;
+    
+    const hoursSaved = Math.floor(Math.random() * 5000) + 50;
+
     database.push({
       project_id: id,
+      company_id: `CO-${String(1000 + (i % 150)).padStart(4, '0')}`,
       project_name: name,
-      industry: industry,
-      status: status,
+      project_status: status,
+      automation_type: autoType,
       robots_deployed: robots,
-      cumulative_savings: savings,
-      roi: roi,
+      annual_savings_usd: savings,
+      budget_usd: budget,
+      roi_percent: roi,
+      start_date: startDate,
+      employee_hours_saved: hoursSaved,
+      department: dept,
+      industry: industry,
+      implementation_partner: partner,
+      country: country,
       last_updated: Date.now()
     });
   }
@@ -54,19 +85,32 @@
         
         // Modulate fields:
         // Accumulate savings
-        row.cumulative_savings += Math.random() * 200 + 10;
+        row.annual_savings_usd += Math.random() * 200 + 10;
+        
         // Maybe change robots deployed
         if (Math.random() > 0.8) {
           row.robots_deployed = Math.max(1, row.robots_deployed + (Math.random() > 0.5 ? 1 : -1));
         }
+        
         // Maybe change status
-        if (Math.random() > 0.95) {
-          row.status = statuses[Math.floor(Math.random() * statuses.length)];
+        if (Math.random() > 0.93) {
+          const randStatus = Math.random();
+          row.project_status = randStatus > 0.95 ? "Failed" : (randStatus > 0.85 ? "critical" : (randStatus > 0.70 ? "warning" : "healthy"));
+          if (row.project_status === "Failed") {
+            row.roi_percent = -Math.random() * 0.5 - 0.05;
+          }
         }
+        
         // Maybe change ROI slightly
-        if (Math.random() > 0.7) {
-          row.roi = Math.max(0.1, row.roi + (Math.random() * 0.2 - 0.1));
+        if (row.project_status !== "Failed" && Math.random() > 0.7) {
+          row.roi_percent = Math.max(-0.5, row.roi_percent + (Math.random() * 0.2 - 0.1));
         }
+        
+        // Accumulate employee hours saved
+        if (Math.random() > 0.5) {
+          row.employee_hours_saved += Math.floor(Math.random() * 10) + 1;
+        }
+
         row.last_updated = Date.now();
         
         batch.push({ ...row });
