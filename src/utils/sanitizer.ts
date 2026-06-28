@@ -12,11 +12,20 @@ export function formatCurrency(value: number): string {
 }
 
 /**
+ * Clamps a numeric value (e.g., ROI multiplier) to a valid range (min 0)
+ * and rounds it to 2 decimal places.
+ */
+export function clampPercent(value: number): number {
+  if (isNaN(value)) return 0;
+  return Math.max(0, value);
+}
+
+/**
  * Rounds a decimal percentage value (e.g., 0.8543 -> 85.43%) to 2 decimal places
  * and returns it as a formatted string. Clamps to minimum 0%.
  */
 export function formatPercent(value: number): string {
-  if (isNaN(value)) return '0.00%';
-  const percentage = Math.max(0, value * 100);
+  const clamped = clampPercent(value);
+  const percentage = clamped * 100;
   return `${percentage.toFixed(2)}%`;
 }

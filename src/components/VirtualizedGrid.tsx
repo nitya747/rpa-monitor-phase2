@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { stateEngine } from '../state/StateEngine';
 import type { RpaRow } from '../types';
 import { formatCurrency, formatPercent } from '../utils/sanitizer';
@@ -31,7 +31,7 @@ export const VirtualizedGrid: React.FC = () => {
   const visibleCount = Math.ceil(VIEWPORT_HEIGHT / ROW_HEIGHT) + 3; // buffer rows
 
   // Imperatively update the text content and position of row elements in the viewport
-  const updateViewport = () => {
+  const updateViewport = useCallback(() => {
     if (!containerRef.current) return;
     const scrollTop = containerRef.current.scrollTop;
     
@@ -92,7 +92,7 @@ export const VirtualizedGrid: React.FC = () => {
         rowEl.style.display = 'none';
       }
     }
-  };
+  }, [visibleCount]);
 
   // Handle scroll events throttled to requestAnimationFrame
   const onScroll = () => {
@@ -134,7 +134,7 @@ export const VirtualizedGrid: React.FC = () => {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, []);
+  }, [updateViewport]);
 
   // Update spacer height when row count changes
   useEffect(() => {

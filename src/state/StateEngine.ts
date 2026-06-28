@@ -11,6 +11,7 @@ class RpaStateEngine {
 
   private summarySubscribers: Set<SummarySubscriber> = new Set();
   private gridSubscribers: Set<GridSubscriber> = new Set();
+  private summaryAnimationFrameId: number | null = null;
 
   public getRowsCount(): number {
     return this.rowIds.length;
@@ -91,13 +92,19 @@ class RpaStateEngine {
   }
 
   private notifySummary(): void {
-    const currentMetrics = { ...this.metrics };
-    this.summarySubscribers.forEach((sub) => {
-      try {
-        sub(currentMetrics);
-      } catch (e) {
-        console.error('Error in summary subscriber:', e);
-      }
+    if (this.summaryAnimationFrameId !== null) {
+      return;
+    }
+    this.summaryAnimationFrameId = requestAnimationFrame(() => {
+      this.summaryAnimationFrameId = null;
+      const currentMetrics = { ...this.metrics };
+      this.summarySubscribers.forEach((sub) => {
+        try {
+          sub(currentMetrics);
+        } catch (e) {
+          console.error('Error in summary subscriber:', e);
+        }
+      });
     });
   }
 
