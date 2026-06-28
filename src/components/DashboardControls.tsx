@@ -10,6 +10,7 @@ interface DashboardControlsProps {
   onToggleToggles: () => void;
   visibleColumns: { [key: string]: boolean };
   onToggleColumn: (colId: string) => void;
+  onTriggerExport: () => void;
 }
 
 interface MultiSelectDropdownProps {
@@ -86,6 +87,7 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   onToggleToggles,
   visibleColumns,
   onToggleColumn,
+  onTriggerExport,
 }) => {
   const [search, setSearch] = useState(stateEngine.getSearchQuery());
   const [isPaused, setIsPaused] = useState(stateEngine.getPaused());
@@ -310,6 +312,21 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
               <span>View Analytics</span>
             </button>
           )}
+
+          {/* Export Button */}
+          <button
+            id="snapshot-export-btn"
+            className="btn btn-control-outline"
+            onClick={onTriggerExport}
+            title="Export CSV Snapshot (Alt+E or Ctrl+Shift+E)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Export CSV</span>
+          </button>
 
           {/* Layout Button */}
           <div className="layout-config-container" ref={layoutDropdownRef}>

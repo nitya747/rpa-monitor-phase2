@@ -87,7 +87,7 @@ const getWorkerCode = (): string => {
  * Triggers the client-side snapshot export using a Web Worker.
  */
 export const triggerSnapshotExport = (onProgress: ExportCallback): void => {
-  const rows = stateEngine.getFilteredRows();
+  const rows: RpaRow[] = stateEngine.getFilteredRows();
   
   if (rows.length === 0) {
     onProgress('error', 'No active rows match the current filters.');
