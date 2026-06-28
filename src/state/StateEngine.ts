@@ -1,5 +1,7 @@
 import type { RpaRow, GlobalMetrics, SummarySubscriber, GridSubscriber, StreamStateSubscriber } from '../types';
 
+const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
 class RpaStateEngine {
   private rows: Map<string, RpaRow> = new Map();
   private rowIds: string[] = []; // maintain stable insertion order
@@ -371,12 +373,18 @@ class RpaStateEngine {
 
     // 2. Apply Multi-Column Sorting
     if (this.sortState.length > 0) {
-      result.sort((aId, bId) => {
-        const a = this.rows.get(aId);
-        const b = this.rows.get(bId);
-        if (!a || !b) return 0;
+      // Pre-map rows to bypass expensive Map lookups inside the sort loop
+      const rowsToSort: RpaRow[] = [];
+      for (let i = 0; i < result.length; i++) {
+        const r = this.rows.get(result[i]);
+        if (r) {
+          rowsToSort.push(r);
+        }
+      }
 
-        for (const sort of this.sortState) {
+      rowsToSort.sort((a, b) => {
+        for (let i = 0; i < this.sortState.length; i++) {
+          const sort = this.sortState[i];
           const field = sort.field;
           const dir = sort.direction === 'asc' ? 1 : -1;
 
@@ -384,19 +392,19 @@ class RpaStateEngine {
           let valB = b[field];
 
           // Fallbacks for compatibility
-          if (field === 'roi_percent' && valA === undefined) {
-            valA = (a as any).roi;
-            valB = (b as any).roi;
+          if (field === 'roi_percent') {
+            if (valA === undefined) valA = (a as any).roi;
+            if (valB === undefined) valB = (b as any).roi;
           }
-          if (field === 'annual_savings_usd' && valA === undefined) {
-            valA = (a as any).cumulative_savings;
-            valB = (b as any).cumulative_savings;
+          if (field === 'annual_savings_usd') {
+            if (valA === undefined) valA = (a as any).cumulative_savings;
+            if (valB === undefined) valB = (b as any).cumulative_savings;
           }
 
           if (valA === undefined || valB === undefined) continue;
 
           if (typeof valA === 'string' && typeof valB === 'string') {
-            const cmp = valA.localeCompare(valB, undefined, { sensitivity: 'base', numeric: true });
+            const cmp = collator.compare(valA, valB);
             if (cmp !== 0) return cmp * dir;
           } else if (typeof valA === 'number' && typeof valB === 'number') {
             if (valA !== valB) {
@@ -406,6 +414,8 @@ class RpaStateEngine {
         }
         return 0;
       });
+
+      result = rowsToSort.map((r) => r.project_id);
     }
 
     this.filteredRowIds = result;
